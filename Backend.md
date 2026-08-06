@@ -1,0 +1,11 @@
+Los datos que se deben manejar son:
+- En el log in: mail y contraseña.
+- En el sign up: mail, contraseña, nombre, apellido, fecha de nacimiento, DNI, obra social.
+- Se necesita un código de verificiación que se envió al mail para poder entrar.
+- Se manejarán mensajes entre médicos y pacientes.
+- Hay notificaciones que muestran si un médico o paciente envió un mensaje o recibió un análisis.
+- El médico tiene que poder hacer los análisis y ver los datos de sus pacientes y análisis.
+- El paciente debe poder ver sus análisis.
+- Los análisis tienen que mostrar el porcentaje de posibilidad de tener una cardiopatía chagásica y fecha y hora en que se hizo.
+- En el sector de Mi Perfil se tienen que ver tus datos (los importants) y poder modificarlos.
+- El administrador puede designar médicos/pacientes o eliminarlos.
