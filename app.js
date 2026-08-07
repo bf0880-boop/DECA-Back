@@ -2,11 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const env = require('./src/config/env');
 const pool = require('./src/config/db');
+const usuarioRoutes = require('./src/routes/usuarioRoutes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/api/usuarios', usuarioRoutes);
 
 app.get('/health/db', async (req, res) => {
   try {
