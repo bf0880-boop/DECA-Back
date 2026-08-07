@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node --watch app.js"
+    "dev": "node --watch app.js",
+    "migrate": "node src/config/migrate.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
