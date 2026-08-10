@@ -71,4 +71,17 @@ async function login(req, res) {
   }
 }
 
-module.exports = { registro, login };
+async function perfil(req, res) {
+  try {
+    const paciente = await usuarioModel.buscarPorId(req.usuario.id);
+    if (!paciente) {
+      return res.status(404).json({ ok: false, error: 'Paciente no encontrado.' });
+    }
+
+    res.json({ ok: true, paciente });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+module.exports = { registro, login, perfil };

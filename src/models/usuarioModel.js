@@ -16,4 +16,14 @@ async function buscarPorMail(mail) {
   return result.rows[0] || null;
 }
 
-module.exports = { crear, buscarPorMail };
+async function buscarPorId(id) {
+  const result = await pool.query(
+    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, verificado,
+       to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at
+     FROM pacientes WHERE id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = { crear, buscarPorMail, buscarPorId };
