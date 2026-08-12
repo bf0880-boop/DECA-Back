@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS notificaciones (
   usuario_tipo VARCHAR(20) NOT NULL CHECK (usuario_tipo IN ('paciente', 'medico', 'admin')),
   usuario_id INTEGER NOT NULL,
   contenido TEXT NOT NULL,
+  leida BOOLEAN NOT NULL DEFAULT FALSE,
   fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE notificaciones ADD COLUMN IF NOT EXISTS leida BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS analisis (
   id SERIAL PRIMARY KEY,

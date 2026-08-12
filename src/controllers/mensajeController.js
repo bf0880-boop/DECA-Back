@@ -1,4 +1,30 @@
 const mensajeModel = require('../models/mensajeModel');
+const usuarioModel = require('../models/usuarioModel');
+const medicoModel = require('../models/medicoModel');
+const notificacionModel = require('../models/notificacionModel');
+
+async function obtenerNombre(rol, id) {
+  const usuario = rol === 'paciente' ? await usuarioModel.buscarPorId(id) : await medicoModel.buscarPorId(id);
+  return usuario ? `${usuario.nombre} ${usuario.apellido}` : null;
+}
+
+async function notificarNuevoMensaje(req, participantes) {
+  try {
+    const emisorNombre = await obtenerNombre(req.usuario.rol, req.usuario.id);
+    if (!emisorNombre) return;
+
+    const destinatarioRol = req.usuario.rol === 'paciente' ? 'medico' : 'paciente';
+    const destinatarioId = destinatarioRol === 'medico' ? participantes.medicoId : participantes.pacienteId;
+
+    await notificacionModel.crear({
+      usuarioTipo: destinatarioRol,
+      usuarioId: destinatarioId,
+      contenido: `${emisorNombre} te envió un mensaje`,
+    });
+  } catch (err) {
+    console.error('No se pudo crear la notificación del mensaje:', err.message);
+  }
+}
 
 function resolverParticipantes(req) {
   const { rol, id } = req.usuario;
@@ -32,6 +58,8 @@ async function enviar(req, res) {
       emisor: req.usuario.rol,
       contenido: contenido.trim(),
     });
+
+    await notificarNuevoMensaje(req, participantes);
 
     res.status(201).json({ ok: true, mensaje });
   } catch (err) {

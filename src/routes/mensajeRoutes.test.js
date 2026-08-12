@@ -3,6 +3,9 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 
 const mensajeModel = require('../models/mensajeModel');
+const usuarioModel = require('../models/usuarioModel');
+const medicoModel = require('../models/medicoModel');
+const notificacionModel = require('../models/notificacionModel');
 const env = require('../config/env');
 const app = require('../app');
 
@@ -63,9 +66,11 @@ describe('POST /api/mensajes', () => {
     expect(res.status).toBe(404);
   });
 
-  it('crea el mensaje y devuelve 201', async () => {
+  it('crea el mensaje, notifica al médico y devuelve 201', async () => {
     const creado = { ...mensajeDelPaciente, contenido: 'Hola doctor' };
     vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez' });
+    vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
     const res = await request(app)
       .post('/api/mensajes')
@@ -80,6 +85,46 @@ describe('POST /api/mensajes', () => {
       emisor: 'paciente',
       contenido: 'Hola doctor',
     });
+    expect(notificacionModel.crear).toHaveBeenCalledWith({
+      usuarioTipo: 'medico',
+      usuarioId: 2,
+      contenido: 'Juana Pérez te envió un mensaje',
+    });
+  });
+
+  it('notifica al paciente cuando el mensaje lo envía el médico', async () => {
+    const creado = { ...mensajeDelPaciente, emisor: 'medico', contenido: 'Hola paciente' };
+    vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue({ nombre: 'Carlos', apellido: 'Gómez' });
+    vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('medico', 2)}`)
+      .send({ contenido: 'Hola paciente', pacienteId: 1 });
+
+    expect(res.status).toBe(201);
+    expect(notificacionModel.crear).toHaveBeenCalledWith({
+      usuarioTipo: 'paciente',
+      usuarioId: 1,
+      contenido: 'Carlos Gómez te envió un mensaje',
+    });
+  });
+
+  it('no falla el envío aunque la notificación no se pueda crear', async () => {
+    const creado = { ...mensajeDelPaciente, contenido: 'Hola doctor' };
+    vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez' });
+    vi.spyOn(notificacionModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: 'Hola doctor', medicoId: 2 });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ ok: true, mensaje: creado });
   });
 });
 
