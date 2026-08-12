@@ -1,7 +1,15 @@
 const pool = require('../config/db');
 
-const SELECT_FORMATEADO = `id, paciente_id, medico_id, emisor, contenido,
-   to_char(fecha_hora_entrega AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS fecha_hora_entrega`;
+function enHorarioArgentino(columna) {
+  return `to_char(${columna} AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ${columna}`;
+}
+
+const SELECT_FORMATEADO = `id, paciente_id, medico_id, emisor,
+   CASE WHEN eliminado_en IS NULL THEN contenido END AS contenido,
+   (eliminado_en IS NOT NULL) AS eliminado,
+   ${enHorarioArgentino('fecha_hora_entrega')},
+   ${enHorarioArgentino('editado_en')},
+   ${enHorarioArgentino('eliminado_en')}`;
 
 async function crear({ pacienteId, medicoId, emisor, contenido }) {
   const result = await pool.query(
@@ -24,4 +32,34 @@ async function obtenerConversacion(pacienteId, medicoId) {
   return result.rows;
 }
 
-module.exports = { crear, obtenerConversacion };
+async function buscarPorId(id) {
+  const result = await pool.query(
+    `SELECT ${SELECT_FORMATEADO} FROM mensajes WHERE id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+async function editar(id, contenido) {
+  const result = await pool.query(
+    `UPDATE mensajes
+     SET contenido = $2, editado_en = NOW()
+     WHERE id = $1 AND eliminado_en IS NULL
+     RETURNING ${SELECT_FORMATEADO}`,
+    [id, contenido]
+  );
+  return result.rows[0] || null;
+}
+
+async function eliminar(id) {
+  const result = await pool.query(
+    `UPDATE mensajes
+     SET eliminado_en = NOW()
+     WHERE id = $1 AND eliminado_en IS NULL
+     RETURNING ${SELECT_FORMATEADO}`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = { crear, obtenerConversacion, buscarPorId, editar, eliminar };

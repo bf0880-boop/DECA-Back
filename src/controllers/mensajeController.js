@@ -42,6 +42,68 @@ async function enviar(req, res) {
   }
 }
 
+function esParticipante(mensaje, usuario) {
+  if (usuario.rol === 'paciente') return mensaje.paciente_id === usuario.id;
+  if (usuario.rol === 'medico') return mensaje.medico_id === usuario.id;
+  return false;
+}
+
+async function buscarMensajePropio(req, res) {
+  const mensaje = await mensajeModel.buscarPorId(req.params.id);
+
+  if (!mensaje || !esParticipante(mensaje, req.usuario)) {
+    res.status(404).json({ ok: false, error: 'El mensaje no existe.' });
+    return null;
+  }
+
+  if (mensaje.emisor !== req.usuario.rol) {
+    res.status(403).json({ ok: false, error: 'Solo podés modificar los mensajes que enviaste.' });
+    return null;
+  }
+
+  return mensaje;
+}
+
+async function editar(req, res) {
+  try {
+    const { contenido } = req.body;
+
+    if (!contenido || !contenido.trim()) {
+      return res.status(400).json({ ok: false, error: 'El mensaje no puede estar vacío.' });
+    }
+
+    const mensaje = await buscarMensajePropio(req, res);
+    if (!mensaje) return;
+
+    const editado = await mensajeModel.editar(mensaje.id, contenido.trim());
+
+    if (!editado) {
+      return res.status(409).json({ ok: false, error: 'No se puede editar un mensaje eliminado.' });
+    }
+
+    res.json({ ok: true, mensaje: editado });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+async function eliminar(req, res) {
+  try {
+    const mensaje = await buscarMensajePropio(req, res);
+    if (!mensaje) return;
+
+    const eliminado = await mensajeModel.eliminar(mensaje.id);
+
+    if (!eliminado) {
+      return res.status(409).json({ ok: false, error: 'El mensaje ya estaba eliminado.' });
+    }
+
+    res.json({ ok: true, mensaje: eliminado });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
 async function obtenerConversacion(req, res) {
   try {
     const participantes = resolverParticipantes(req);
@@ -58,4 +120,4 @@ async function obtenerConversacion(req, res) {
   }
 }
 
-module.exports = { enviar, obtenerConversacion };
+module.exports = { enviar, obtenerConversacion, editar, eliminar };

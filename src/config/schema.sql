@@ -41,8 +41,13 @@ CREATE TABLE IF NOT EXISTS mensajes (
   medico_id INTEGER NOT NULL REFERENCES medicos(id) ON DELETE CASCADE,
   emisor VARCHAR(20) NOT NULL CHECK (emisor IN ('paciente', 'medico')),
   contenido TEXT NOT NULL,
-  fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  editado_en TIMESTAMPTZ,
+  eliminado_en TIMESTAMPTZ
 );
+
+ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS editado_en TIMESTAMPTZ;
+ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS eliminado_en TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS notificaciones (
   id SERIAL PRIMARY KEY,
