@@ -25,16 +25,107 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('PATCH /api/mensajes/:id', () => {
+describe('POST /api/mensajes', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).patch('/api/mensajes/7').send({ contenido: 'Nuevo' });
+    const res = await request(app).post('/api/mensajes').send({ contenido: 'Hola', medicoId: 2 });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve 400 si falta el destinatario', async () => {
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: 'Hola' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('devuelve 400 si el contenido está vacío', async () => {
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: '   ', medicoId: 2 });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('devuelve 404 si el destinatario no existe', async () => {
+    const error = new Error('violación de llave foránea');
+    error.code = '23503';
+    vi.spyOn(mensajeModel, 'crear').mockRejectedValue(error);
+
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: 'Hola', medicoId: 999 });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('crea el mensaje y devuelve 201', async () => {
+    const creado = { ...mensajeDelPaciente, contenido: 'Hola doctor' };
+    vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
+
+    const res = await request(app)
+      .post('/api/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: '  Hola doctor  ', medicoId: 2 });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ ok: true, mensaje: creado });
+    expect(mensajeModel.crear).toHaveBeenCalledWith({
+      pacienteId: 1,
+      medicoId: 2,
+      emisor: 'paciente',
+      contenido: 'Hola doctor',
+    });
+  });
+});
+
+describe('GET /api/mensajes/:contraparteId', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).get('/api/mensajes/2');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve la conversación del paciente con el médico indicado', async () => {
+    const mensajes = [mensajeDelPaciente];
+    vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
+
+    const res = await request(app)
+      .get('/api/mensajes/2')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, mensajes });
+    expect(mensajeModel.obtenerConversacion).toHaveBeenCalledWith(1, '2');
+  });
+
+  it('devuelve la conversación del médico con el paciente indicado', async () => {
+    const mensajes = [mensajeDelPaciente];
+    vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
+
+    const res = await request(app)
+      .get('/api/mensajes/1')
+      .set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(200);
+    expect(mensajeModel.obtenerConversacion).toHaveBeenCalledWith('1', 2);
+  });
+});
+
+describe('PUT /api/mensajes/:id', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).put('/api/mensajes/7').send({ contenido: 'Nuevo' });
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 400 si el contenido está vacío', async () => {
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '   ' });
 
@@ -45,7 +136,7 @@ describe('PATCH /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(null);
 
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -56,7 +147,7 @@ describe('PATCH /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(mensajeDelPaciente);
 
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 99)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -67,7 +158,7 @@ describe('PATCH /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(mensajeDelPaciente);
 
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -79,7 +170,7 @@ describe('PATCH /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'editar').mockResolvedValue(null);
 
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -92,7 +183,7 @@ describe('PATCH /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'editar').mockResolvedValue(editado);
 
     const res = await request(app)
-      .patch('/api/mensajes/7')
+      .put('/api/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '  Hola doctora  ' });
 

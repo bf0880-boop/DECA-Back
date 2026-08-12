@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
-const { verificarToken } = require('./authMiddleware');
+const { verificarToken, permitirRoles } = require('./authMiddleware');
 
 function mockRes() {
   return {
@@ -57,5 +57,41 @@ describe('verificarToken', () => {
 
     expect(next).toHaveBeenCalledOnce();
     expect(req.usuario).toMatchObject(payload);
+  });
+});
+
+describe('permitirRoles', () => {
+  it('rechaza si no hay usuario en el request', () => {
+    const req = {};
+    const res = mockRes();
+    const next = vi.fn();
+
+    permitirRoles('paciente')(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rechaza si el rol del usuario no está permitido', () => {
+    const req = { usuario: { rol: 'medico' } };
+    const res = mockRes();
+    const next = vi.fn();
+
+    permitirRoles('paciente')(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'No tenés permiso para acceder a este recurso.' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('permite el paso si el rol está entre los permitidos', () => {
+    const req = { usuario: { rol: 'medico' } };
+    const res = mockRes();
+    const next = vi.fn();
+
+    permitirRoles('paciente', 'medico')(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.status).not.toHaveBeenCalled();
   });
 });
