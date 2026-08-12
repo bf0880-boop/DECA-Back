@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./config/db');
 const usuarioRoutes = require('./routes/usuarioRoutes');
+const mensajeRoutes = require('./routes/mensajeRoutes');
 
 const app = express();
 
@@ -9,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/mensajes', mensajeRoutes);
 
 app.get('/health/db', async (req, res) => {
   try {

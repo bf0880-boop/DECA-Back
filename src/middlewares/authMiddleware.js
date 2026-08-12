@@ -17,4 +17,13 @@ function verificarToken(req, res, next) {
   }
 }
 
-module.exports = { verificarToken };
+function permitirRoles(...roles) {
+  return (req, res, next) => {
+    if (!req.usuario || !roles.includes(req.usuario.rol)) {
+      return res.status(403).json({ ok: false, error: 'No tenés permiso para acceder a este recurso.' });
+    }
+    next();
+  };
+}
+
+module.exports = { verificarToken, permitirRoles };
