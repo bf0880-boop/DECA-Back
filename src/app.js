@@ -4,6 +4,7 @@ const pool = require('./config/db');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const mensajeRoutes = require('./routes/mensajeRoutes');
 const notificacionRoutes = require('./routes/notificacionRoutes');
+const analisisRoutes = require('./routes/analisisRoutes');
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/mensajes', mensajeRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/analisis', analisisRoutes);
 
 app.get('/health/db', async (req, res) => {
   try {
