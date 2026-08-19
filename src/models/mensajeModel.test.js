@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const pool = require('../config/db');
-const mensajeModel = require('./mensajeModel');
+import pool from '../config/db.js';
+import mensajeModel from './mensajeModel.js';
 
 const mensaje = {
   id: 7,

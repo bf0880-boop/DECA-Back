@@ -1,7 +1,7 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
-const usuarioModel = require('../models/usuarioModel');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
+import usuarioModel from '../models/usuarioModel.js';
 
 async function registro(req, res) {
   try {
@@ -84,4 +84,4 @@ async function perfil(req, res) {
   }
 }
 
-module.exports = { registro, login, perfil };
+export default { registro, login, perfil };

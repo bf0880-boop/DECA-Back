@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const usuarioModel = require('../models/usuarioModel');
-const usuarioController = require('./usuarioController');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import usuarioModel from '../models/usuarioModel.js';
+import usuarioController from './usuarioController.js';
 
 function mockRes() {
   return {

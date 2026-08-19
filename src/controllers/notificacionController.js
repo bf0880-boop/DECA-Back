@@ -1,4 +1,4 @@
-const notificacionModel = require('../models/notificacionModel');
+import notificacionModel from '../models/notificacionModel.js';
 
 async function listar(req, res) {
   try {
@@ -24,4 +24,4 @@ async function marcarLeida(req, res) {
   }
 }
 
-module.exports = { listar, marcarLeida };
+export default { listar, marcarLeida };

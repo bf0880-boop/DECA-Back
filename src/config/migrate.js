@@ -1,9 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const pool = require('./db');
+import fs from 'fs';
+import pool from './db.js';
 
 async function migrate() {
-  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+  const schema = fs.readFileSync(new URL('schema.sql', import.meta.url), 'utf8');
   await pool.query(schema);
   console.log('Migracion aplicada correctamente.');
   await pool.end();

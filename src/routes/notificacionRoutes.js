@@ -1,6 +1,6 @@
-const { Router } = require('express');
-const notificacionController = require('../controllers/notificacionController');
-const { verificarToken, permitirRoles } = require('../middlewares/authMiddleware');
+import { Router } from 'express';
+import notificacionController from '../controllers/notificacionController.js';
+import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -9,4 +9,4 @@ router.use(verificarToken, permitirRoles('paciente', 'medico'));
 router.get('/', notificacionController.listar);
 router.put('/:id/leida', notificacionController.marcarLeida);
 
-module.exports = router;
+export default router;

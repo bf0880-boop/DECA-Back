@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 
 function verificarToken(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -26,4 +26,4 @@ function permitirRoles(...roles) {
   };
 }
 
-module.exports = { verificarToken, permitirRoles };
+export { verificarToken, permitirRoles };

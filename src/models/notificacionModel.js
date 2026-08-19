@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 const SELECT_FORMATEADO = `id, usuario_tipo, usuario_id, contenido, leida,
    to_char(fecha_hora_entrega AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS fecha_hora_entrega`;
@@ -35,4 +35,4 @@ async function marcarLeida(id, usuarioTipo, usuarioId) {
   return result.rows[0] || null;
 }
 
-module.exports = { crear, listarPorUsuario, marcarLeida };
+export default { crear, listarPorUsuario, marcarLeida };

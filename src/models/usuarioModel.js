@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function crear({ nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial }) {
   const result = await pool.query(
@@ -26,4 +26,4 @@ async function buscarPorId(id) {
   return result.rows[0] || null;
 }
 
-module.exports = { crear, buscarPorMail, buscarPorId };
+export default { crear, buscarPorMail, buscarPorId };

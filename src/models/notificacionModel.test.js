@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const pool = require('../config/db');
-const notificacionModel = require('./notificacionModel');
+import pool from '../config/db.js';
+import notificacionModel from './notificacionModel.js';
 
 const notificacion = {
   id: 3,

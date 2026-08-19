@@ -1,6 +1,8 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
 
-module.exports = {
+dotenv.config();
+
+export default {
   port: Number(process.env.PORT) || 3000,
   db: {
     host: process.env.PGHOST,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const notificacionModel = require('../models/notificacionModel');
-const notificacionController = require('./notificacionController');
+import notificacionModel from '../models/notificacionModel.js';
+import notificacionController from './notificacionController.js';
 
 function mockRes() {
   return {

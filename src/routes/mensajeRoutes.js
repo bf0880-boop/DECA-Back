@@ -1,6 +1,6 @@
-const { Router } = require('express');
-const mensajeController = require('../controllers/mensajeController');
-const { verificarToken, permitirRoles } = require('../middlewares/authMiddleware');
+import { Router } from 'express';
+import mensajeController from '../controllers/mensajeController.js';
+import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -11,4 +11,4 @@ router.get('/:contraparteId', mensajeController.obtenerConversacion);
 router.put('/:id', mensajeController.editar);
 router.delete('/:id', mensajeController.eliminar);
 
-module.exports = router;
+export default router;

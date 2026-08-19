@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 function enHorarioArgentino(columna) {
   return `to_char(${columna} AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ${columna}`;
@@ -27,4 +27,4 @@ async function listarPorPaciente(pacienteId) {
   return result.rows;
 }
 
-module.exports = { crear, listarPorPaciente };
+export default { crear, listarPorPaciente };

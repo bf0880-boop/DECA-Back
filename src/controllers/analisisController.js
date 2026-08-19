@@ -1,5 +1,5 @@
-const analisisModel = require('../models/analisisModel');
-const notificacionModel = require('../models/notificacionModel');
+import analisisModel from '../models/analisisModel.js';
+import notificacionModel from '../models/notificacionModel.js';
 
 function porcentajeValido(porcentaje) {
   return typeof porcentaje === 'number' && porcentaje >= 0 && porcentaje <= 100;
@@ -60,4 +60,4 @@ async function listarDePaciente(req, res) {
   }
 }
 
-module.exports = { realizar, listarPropios, listarDePaciente };
+export default { realizar, listarPropios, listarDePaciente };

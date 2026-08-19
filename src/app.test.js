@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-const request = require('supertest');
+import request from 'supertest';
 
-const pool = require('./config/db');
-const app = require('./app');
+import pool from './config/db.js';
+import app from './app.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

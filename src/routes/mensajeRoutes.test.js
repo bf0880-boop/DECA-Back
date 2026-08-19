@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-const request = require('supertest');
-const jwt = require('jsonwebtoken');
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
 
-const mensajeModel = require('../models/mensajeModel');
-const usuarioModel = require('../models/usuarioModel');
-const medicoModel = require('../models/medicoModel');
-const notificacionModel = require('../models/notificacionModel');
-const env = require('../config/env');
-const app = require('../app');
+import mensajeModel from '../models/mensajeModel.js';
+import usuarioModel from '../models/usuarioModel.js';
+import medicoModel from '../models/medicoModel.js';
+import notificacionModel from '../models/notificacionModel.js';
+import env from '../config/env.js';
+import app from '../app.js';
 
 function token(rol, id) {
   return jwt.sign({ id, mail: `${rol}${id}@test.com`, rol }, env.jwt.secret, {

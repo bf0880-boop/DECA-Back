@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const pool = require('../config/db');
-const medicoModel = require('./medicoModel');
+import pool from '../config/db.js';
+import medicoModel from './medicoModel.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-const request = require('supertest');
-const jwt = require('jsonwebtoken');
+import request from 'supertest';
+import jwt from 'jsonwebtoken';
 
-const usuarioModel = require('../models/usuarioModel');
-const env = require('../config/env');
-const app = require('../app');
+import usuarioModel from '../models/usuarioModel.js';
+import env from '../config/env.js';
+import app from '../app.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

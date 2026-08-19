@@ -1,10 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const pool = require('./config/db');
-const usuarioRoutes = require('./routes/usuarioRoutes');
-const mensajeRoutes = require('./routes/mensajeRoutes');
-const notificacionRoutes = require('./routes/notificacionRoutes');
-const analisisRoutes = require('./routes/analisisRoutes');
+import express from 'express';
+import cors from 'cors';
+import pool from './config/db.js';
+import usuarioRoutes from './routes/usuarioRoutes.js';
+import mensajeRoutes from './routes/mensajeRoutes.js';
+import notificacionRoutes from './routes/notificacionRoutes.js';
+import analisisRoutes from './routes/analisisRoutes.js';
 
 const app = express();
 
@@ -25,4 +25,4 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-module.exports = app;
+export default app;

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const mensajeModel = require('../models/mensajeModel');
-const usuarioModel = require('../models/usuarioModel');
-const medicoModel = require('../models/medicoModel');
-const notificacionModel = require('../models/notificacionModel');
-const mensajeController = require('./mensajeController');
+import mensajeModel from '../models/mensajeModel.js';
+import usuarioModel from '../models/usuarioModel.js';
+import medicoModel from '../models/medicoModel.js';
+import notificacionModel from '../models/notificacionModel.js';
+import mensajeController from './mensajeController.js';
 
 function mockRes() {
   return {

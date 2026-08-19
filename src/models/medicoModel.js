@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function buscarPorId(id) {
   const result = await pool.query(
@@ -8,4 +8,4 @@ async function buscarPorId(id) {
   return result.rows[0] || null;
 }
 
-module.exports = { buscarPorId };
+export default { buscarPorId };

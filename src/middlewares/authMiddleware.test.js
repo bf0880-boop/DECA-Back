@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
-const { verificarToken, permitirRoles } = require('./authMiddleware');
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
+import { verificarToken, permitirRoles } from './authMiddleware.js';
 
 function mockRes() {
   return {

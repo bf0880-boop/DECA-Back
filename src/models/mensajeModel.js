@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 function enHorarioArgentino(columna) {
   return `to_char(${columna} AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ${columna}`;
@@ -62,4 +62,4 @@ async function eliminar(id) {
   return result.rows[0] || null;
 }
 
-module.exports = { crear, obtenerConversacion, buscarPorId, editar, eliminar };
+export default { crear, obtenerConversacion, buscarPorId, editar, eliminar };
