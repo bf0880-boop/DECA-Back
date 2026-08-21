@@ -8,4 +8,9 @@ async function buscarPorId(id) {
   return result.rows[0] || null;
 }
 
-export default { buscarPorId };
+async function buscarPorMail(mail) {
+  const result = await pool.query('SELECT * FROM medicos WHERE mail = $1', [mail]);
+  return result.rows[0] || null;
+}
+
+export default { buscarPorId, buscarPorMail };

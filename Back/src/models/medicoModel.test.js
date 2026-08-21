@@ -35,3 +35,23 @@ describe('buscarPorId', () => {
     await expect(medicoModel.buscarPorId(2)).rejects.toThrow('fallo de conexión');
   });
 });
+
+describe('buscarPorMail', () => {
+  it('devuelve el médico encontrado', async () => {
+    const medico = { id: 2, mail: 'carlos@test.com', contrasena: 'hash-guardado' };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
+
+    const resultado = await medicoModel.buscarPorMail('carlos@test.com');
+
+    expect(resultado).toEqual(medico);
+    expect(pool.query).toHaveBeenCalledWith('SELECT * FROM medicos WHERE mail = $1', ['carlos@test.com']);
+  });
+
+  it('devuelve null si no hay ningún médico con ese mail', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    const resultado = await medicoModel.buscarPorMail('nadie@test.com');
+
+    expect(resultado).toBeNull();
+  });
+});
