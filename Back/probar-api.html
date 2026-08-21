@@ -32,6 +32,30 @@
 <button onclick="listarUsuarios()">GET /api/usuarios</button>
 <pre id="usuariosResultado">(resultado acá)</pre>
 
+<h2>3. Enviar mensaje a un paciente</h2>
+<p>Logueado como médico, mandale un mensaje a un paciente por su id (fijate el id en el paso 2).</p>
+<label>ID del paciente</label>
+<input id="pacienteIdMensaje" value="1">
+<label>Mensaje</label>
+<input id="contenidoMensaje" value="Hola, ¿cómo estás?">
+<button onclick="enviarMensaje()">POST /api/mensajes</button>
+<pre id="mensajeResultado">(resultado acá)</pre>
+
+<h2>4. Ver conversación con un paciente</h2>
+<label>ID del paciente</label>
+<input id="pacienteIdConversacion" value="1">
+<button onclick="verConversacion()">GET /api/mensajes/:pacienteId</button>
+<pre id="conversacionResultado">(resultado acá)</pre>
+
+<h2>5. Notificaciones</h2>
+<button onclick="listarNotificaciones()">GET /api/notificaciones</button>
+<pre id="notificacionesResultado">(resultado acá)</pre>
+
+<label>ID de la notificación a marcar como leída</label>
+<input id="notificacionId" value="1">
+<button onclick="marcarLeida()">PUT /api/notificaciones/:id/leida</button>
+<pre id="marcarLeidaResultado">(resultado acá)</pre>
+
 <script>
 let token = '';
 
@@ -70,6 +94,97 @@ async function listarUsuarios() {
   salida.textContent = 'Cargando...';
   try {
     const r = await fetch(baseUrl + '/api/usuarios', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function enviarMensaje() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const pacienteId = document.getElementById('pacienteIdMensaje').value;
+  const contenido = document.getElementById('contenidoMensaje').value;
+  const salida = document.getElementById('mensajeResultado');
+
+  if (!token) {
+    salida.textContent = 'Primero hacé login arriba para conseguir el token.';
+    return;
+  }
+
+  salida.textContent = 'Cargando...';
+  try {
+    const r = await fetch(baseUrl + '/api/mensajes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ pacienteId: Number(pacienteId), contenido }),
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function verConversacion() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const pacienteId = document.getElementById('pacienteIdConversacion').value;
+  const salida = document.getElementById('conversacionResultado');
+
+  if (!token) {
+    salida.textContent = 'Primero hacé login arriba para conseguir el token.';
+    return;
+  }
+
+  salida.textContent = 'Cargando...';
+  try {
+    const r = await fetch(baseUrl + '/api/mensajes/' + pacienteId, {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function listarNotificaciones() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const salida = document.getElementById('notificacionesResultado');
+
+  if (!token) {
+    salida.textContent = 'Primero hacé login arriba para conseguir el token.';
+    return;
+  }
+
+  salida.textContent = 'Cargando...';
+  try {
+    const r = await fetch(baseUrl + '/api/notificaciones', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function marcarLeida() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const id = document.getElementById('notificacionId').value;
+  const salida = document.getElementById('marcarLeidaResultado');
+
+  if (!token) {
+    salida.textContent = 'Primero hacé login arriba para conseguir el token.';
+    return;
+  }
+
+  salida.textContent = 'Cargando...';
+  try {
+    const r = await fetch(baseUrl + '/api/notificaciones/' + id + '/leida', {
+      method: 'PUT',
       headers: { Authorization: 'Bearer ' + token },
     });
     const data = await r.json();
