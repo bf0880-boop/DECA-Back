@@ -165,3 +165,27 @@ describe('perfil', () => {
     expect(res.json).toHaveBeenCalledWith({ ok: true, paciente });
   });
 });
+
+describe('listar', () => {
+  it('devuelve la lista de pacientes', async () => {
+    const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
+    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+    const req = {};
+    const res = mockRes();
+
+    await usuarioController.listar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, pacientes });
+  });
+
+  it('devuelve 500 si ocurre un error inesperado', async () => {
+    vi.spyOn(usuarioModel, 'listarTodos').mockRejectedValue(new Error('fallo de conexión'));
+    const req = {};
+    const res = mockRes();
+
+    await usuarioController.listar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'fallo de conexión' });
+  });
+});

@@ -84,4 +84,13 @@ async function perfil(req, res) {
   }
 }
 
-export default { registro, login, perfil };
+async function listar(req, res) {
+  try {
+    const pacientes = await usuarioModel.listarTodos();
+    res.json({ ok: true, pacientes });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+export default { registro, login, perfil, listar };

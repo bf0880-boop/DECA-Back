@@ -105,3 +105,25 @@ describe('buscarPorId', () => {
     expect(resultado).toBeNull();
   });
 });
+
+describe('listarTodos', () => {
+  it('devuelve todos los pacientes sin la contraseña', async () => {
+    const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: pacientes });
+
+    const resultado = await usuarioModel.listarTodos();
+
+    expect(resultado).toEqual(pacientes);
+    const [sql] = pool.query.mock.calls[0];
+    expect(sql).toContain('FROM pacientes');
+    expect(sql).not.toContain('contrasena');
+  });
+
+  it('devuelve un array vacío si no hay pacientes', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    const resultado = await usuarioModel.listarTodos();
+
+    expect(resultado).toEqual([]);
+  });
+});

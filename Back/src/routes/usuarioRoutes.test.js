@@ -6,6 +6,12 @@ import usuarioModel from '../models/usuarioModel.js';
 import env from '../config/env.js';
 import app from '../app.js';
 
+function token(rol, id) {
+  return jwt.sign({ id, mail: `${rol}${id}@test.com`, rol }, env.jwt.secret, {
+    expiresIn: env.jwt.expiresIn,
+  });
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -65,5 +71,29 @@ describe('GET /api/usuarios/perfil', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, paciente });
+  });
+});
+
+describe('GET /api/usuarios', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).get('/api/usuarios');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve 403 si el token es de un paciente', async () => {
+    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('devuelve la lista de pacientes para un médico', async () => {
+    const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
+    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+
+    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, pacientes });
   });
 });
