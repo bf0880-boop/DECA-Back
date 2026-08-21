@@ -6,5 +6,6 @@ const router = Router();
 
 router.post('/login', medicoController.login);
 router.get('/perfil', verificarToken, medicoController.perfil);
+router.get('/', verificarToken, medicoController.listar);
 
 export default router;

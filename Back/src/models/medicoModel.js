@@ -13,4 +13,11 @@ async function buscarPorMail(mail) {
   return result.rows[0] || null;
 }
 
-export default { buscarPorId, buscarPorMail };
+async function listarTodos() {
+  const result = await pool.query(
+    'SELECT id, nombre, apellido, mail, verificado FROM medicos ORDER BY apellido, nombre'
+  );
+  return result.rows;
+}
+
+export default { buscarPorId, buscarPorMail, listarTodos };
