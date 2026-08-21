@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Probar API DECA</title>
+<style>
+  body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+  label { display: block; margin-top: 12px; font-weight: bold; }
+  input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  button { margin-top: 16px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+  pre { background: #f0f0f0; padding: 12px; margin-top: 16px; white-space: pre-wrap; word-break: break-all; border-radius: 4px; }
+  h2 { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Probar API DECA</h1>
+
+<label>URL base del backend</label>
+<input id="baseUrl" value="https://deca-back.vercel.app">
+
+<h2>1. Login médico</h2>
+<label>Mail</label>
+<input id="mail" value="juan.perez@deca.local">
+<label>Contraseña</label>
+<input id="contrasena" value="juan123">
+<button onclick="login()">Login</button>
+<pre id="loginResultado">(resultado acá)</pre>
+
+<h2>2. Listar usuarios (pacientes)</h2>
+<p>Usa el token que consiguió el login de arriba.</p>
+<button onclick="listarUsuarios()">GET /api/usuarios</button>
+<pre id="usuariosResultado">(resultado acá)</pre>
+
+<script>
+let token = '';
+
+async function login() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const mail = document.getElementById('mail').value;
+  const contrasena = document.getElementById('contrasena').value;
+  const salida = document.getElementById('loginResultado');
+  salida.textContent = 'Cargando...';
+
+  try {
+    const r = await fetch(baseUrl + '/api/medicos/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mail, contrasena }),
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+    if (data.token) {
+      token = data.token;
+    }
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+
+async function listarUsuarios() {
+  const baseUrl = document.getElementById('baseUrl').value;
+  const salida = document.getElementById('usuariosResultado');
+
+  if (!token) {
+    salida.textContent = 'Primero hacé login arriba para conseguir el token.';
+    return;
+  }
+
+  salida.textContent = 'Cargando...';
+  try {
+    const r = await fetch(baseUrl + '/api/usuarios', {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const data = await r.json();
+    salida.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    salida.textContent = 'Error: ' + err.message;
+  }
+}
+</script>
+
+</body>
+</html>
