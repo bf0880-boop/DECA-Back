@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import analisisModel from '../models/analisisModel.js';
 import notificacionModel from '../models/notificacionModel.js';
 import env from '../config/env.js';
-import app from '../app.js';
+import app from '../server.js';
 
 function token(rol, id) {
   return jwt.sign({ id, mail: `${rol}${id}@test.com`, rol }, env.jwt.secret, {

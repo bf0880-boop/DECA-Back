@@ -16,6 +16,50 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('registro', () => {
+  it('devuelve 400 si faltan datos obligatorios', async () => {
+    const req = { body: { nombre: 'Ana' } };
+    const res = mockRes();
+
+    await medicoController.registro(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('devuelve 409 si ya existe una cuenta con ese mail', async () => {
+    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 1 });
+    const req = {
+      body: { nombre: 'Ana', apellido: 'Ruiz', mail: 'ana@test.com', contrasena: 'secreta123', dni: '30111222' },
+    };
+    const res = mockRes();
+
+    await medicoController.registro(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
+
+  it('crea el médico como no verificado y devuelve 201', async () => {
+    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
+    vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
+    const req = {
+      body: {
+        nombre: 'Ana',
+        apellido: 'Ruiz',
+        mail: 'ana@test.com',
+        contrasena: 'secreta123',
+        dni: '30111222',
+        matricula: 'MP-1',
+      },
+    };
+    const res = mockRes();
+
+    await medicoController.registro(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
+  });
+});
+
 describe('login', () => {
   it('devuelve 400 si falta el mail o la contraseña', async () => {
     const req = { body: { mail: 'carlos@test.com' } };
@@ -48,7 +92,18 @@ describe('login', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it('devuelve el token y los datos del médico si las credenciales son correctas', async () => {
+  it('devuelve 403 si el médico todavía no fue aprobado', async () => {
+    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, contrasena: 'hash-guardado', verificado: false });
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+    const req = { body: { mail: 'carlos@test.com', contrasena: 'secreta123' } };
+    const res = mockRes();
+
+    await medicoController.login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+
+  it('devuelve el token y los datos del médico si las credenciales son correctas y está verificado', async () => {
     const medico = {
       id: 2,
       nombre: 'Carlos',
@@ -110,5 +165,76 @@ describe('perfil', () => {
     await medicoController.perfil(req, res);
 
     expect(res.json).toHaveBeenCalledWith({ ok: true, medico });
+  });
+});
+
+describe('listar', () => {
+  it('devuelve sólo los médicos verificados', async () => {
+    const medicos = [{ id: 1, verificado: true }];
+    vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+    const req = {};
+    const res = mockRes();
+
+    await medicoController.listar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medicos });
+  });
+});
+
+describe('pendientes', () => {
+  it('devuelve los médicos sin aprobar', async () => {
+    const medicos = [{ id: 2, verificado: false }];
+    vi.spyOn(medicoModel, 'listarPendientes').mockResolvedValue(medicos);
+    const req = {};
+    const res = mockRes();
+
+    await medicoController.pendientes(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medicos });
+  });
+});
+
+describe('aprobar', () => {
+  it('devuelve 404 si el médico no existe', async () => {
+    vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(null);
+    const req = { params: { id: '99' } };
+    const res = mockRes();
+
+    await medicoController.aprobar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('devuelve el médico aprobado', async () => {
+    const medico = { id: 2, verificado: true };
+    vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(medico);
+    const req = { params: { id: '2' } };
+    const res = mockRes();
+
+    await medicoController.aprobar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medico });
+  });
+});
+
+describe('eliminar', () => {
+  it('devuelve 404 si el médico no existe', async () => {
+    vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(false);
+    const req = { params: { id: '99' } };
+    const res = mockRes();
+
+    await medicoController.eliminar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('devuelve ok si lo borró', async () => {
+    vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(true);
+    const req = { params: { id: '2' } };
+    const res = mockRes();
+
+    await medicoController.eliminar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
 });

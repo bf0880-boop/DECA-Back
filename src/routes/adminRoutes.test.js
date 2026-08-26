@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 
 import adminModel from '../models/adminModel.js';
 import env from '../config/env.js';
-import app from '../app.js';
+import app from '../server.js';
 
 afterEach(() => {
   vi.restoreAllMocks();

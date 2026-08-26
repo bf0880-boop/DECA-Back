@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 
 import pool from './config/db.js';
-import app from './app.js';
+import app from './server.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
