@@ -7,6 +7,6 @@ const router = Router();
 router.post('/registro', usuarioController.registro);
 router.post('/login', usuarioController.login);
 router.get('/perfil', verificarToken, usuarioController.perfil);
-router.get('/', verificarToken, permitirRoles('medico'), usuarioController.listar);
+router.get('/', verificarToken, permitirRoles('medico', 'admin'), usuarioController.listar);
 
 export default router;

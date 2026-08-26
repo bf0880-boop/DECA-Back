@@ -96,4 +96,14 @@ describe('GET /api/usuarios', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, pacientes });
   });
+
+  it('devuelve la lista de pacientes para un admin', async () => {
+    const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
+    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+
+    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('admin', 1)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, pacientes });
+  });
 });

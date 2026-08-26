@@ -8,6 +8,7 @@
     "start": "node app.js",
     "dev": "node --watch app.js",
     "migrate": "node src/config/migrate.js",
+    "seed:admin": "node src/config/seedAdmin.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
