@@ -63,7 +63,6 @@ async function login(req, res) {
         nombre: paciente.nombre,
         apellido: paciente.apellido,
         mail: paciente.mail,
-        verificado: paciente.verificado,
       },
     });
   } catch (err) {
