@@ -2,13 +2,14 @@
   "name": "deca-back",
   "version": "1.0.0",
   "description": "DECA es un sistema el cual es capaz de detectar patrones similares a los propios de una cardipatia chagasica y detectar su similitud",
-  "main": "app.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node app.js",
-    "dev": "node --watch app.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js",
     "migrate": "node src/config/migrate.js",
     "seed:admin": "node src/config/seedAdmin.js",
+    "seed:medico": "node src/config/seedMedico.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
