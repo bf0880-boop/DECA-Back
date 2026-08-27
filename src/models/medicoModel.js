@@ -33,7 +33,7 @@ async function listarVerificados() {
 
 async function listarPendientes() {
   const result = await pool.query(
-    `SELECT id, nombre, apellido, mail, matricula, verificado,
+    `SELECT id, nombre, apellido, mail, dni, matricula, verificado,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at
      FROM medicos WHERE verificado = FALSE ORDER BY created_at`
   );
