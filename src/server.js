@@ -13,12 +13,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/usuarios', usuarioRoutes);
-app.use('/api/medicos', medicoRoutes);
-app.use('/api/admins', adminRoutes);
-app.use('/api/mensajes', mensajeRoutes);
-app.use('/api/notificaciones', notificacionRoutes);
-app.use('/api/analisis', analisisRoutes);
+app.use('usuarios', usuarioRoutes);
+app.use('/medicos', medicoRoutes);
+app.use('/admins', adminRoutes);
+app.use('/mensajes', mensajeRoutes);
+app.use('/notificaciones', notificacionRoutes);
+app.use('/analisis', analisisRoutes);
+
+app.get('/', async (req, res) => {
+  res.status(200).send("DECA API")
+ });
 
 app.get('/health', async (req, res) => {
  res.status(200).send("OK")
