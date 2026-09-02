@@ -53,9 +53,21 @@ describe('POST /mensajes', () => {
     expect(res.status).toBe(400);
   });
 
+  it('devuelve 403 si el paciente y el médico no están asignados entre sí', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+
+    const res = await request(app)
+      .post('/mensajes')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ contenido: 'Hola', medicoId: 2 });
+
+    expect(res.status).toBe(403);
+  });
+
   it('devuelve 404 si el destinatario no existe', async () => {
     const error = new Error('violación de llave foránea');
     error.code = '23503';
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 999 });
     vi.spyOn(mensajeModel, 'crear').mockRejectedValue(error);
 
     const res = await request(app)
@@ -69,7 +81,7 @@ describe('POST /mensajes', () => {
   it('crea el mensaje, notifica al médico y devuelve 201', async () => {
     const creado = { ...mensajeDelPaciente, contenido: 'Hola doctor' };
     vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez' });
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez', medico_id: 2 });
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
     const res = await request(app)
@@ -95,6 +107,7 @@ describe('POST /mensajes', () => {
   it('notifica al paciente cuando el mensaje lo envía el médico', async () => {
     const creado = { ...mensajeDelPaciente, emisor: 'medico', contenido: 'Hola paciente' };
     vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue({ nombre: 'Carlos', apellido: 'Gómez' });
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
@@ -114,7 +127,7 @@ describe('POST /mensajes', () => {
   it('no falla el envío aunque la notificación no se pueda crear', async () => {
     const creado = { ...mensajeDelPaciente, contenido: 'Hola doctor' };
     vi.spyOn(mensajeModel, 'crear').mockResolvedValue(creado);
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez' });
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ nombre: 'Juana', apellido: 'Pérez', medico_id: 2 });
     vi.spyOn(notificacionModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -135,8 +148,19 @@ describe('GET /mensajes/:contraparteId', () => {
     expect(res.status).toBe(401);
   });
 
+  it('devuelve 403 si el paciente y el médico no están asignados entre sí', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: '5' });
+
+    const res = await request(app)
+      .get('/mensajes/2')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(403);
+  });
+
   it('devuelve la conversación del paciente con el médico indicado', async () => {
     const mensajes = [mensajeDelPaciente];
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: '2' });
     vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
 
     const res = await request(app)
@@ -150,6 +174,7 @@ describe('GET /mensajes/:contraparteId', () => {
 
   it('devuelve la conversación del médico con el paciente indicado', async () => {
     const mensajes = [mensajeDelPaciente];
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
 
     const res = await request(app)

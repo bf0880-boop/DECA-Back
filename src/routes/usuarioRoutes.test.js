@@ -89,8 +89,8 @@ describe('GET /usuarios', () => {
   });
 
   it('devuelve la lista de pacientes para un médico', async () => {
-    const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
-    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+    const pacientes = [{ id: 1, nombre: 'Juana', medico_id: 2 }];
+    vi.spyOn(usuarioModel, 'listarPorMedico').mockResolvedValue(pacientes);
 
     const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('medico', 2)}`);
 

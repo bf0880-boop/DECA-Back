@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import analisisModel from '../models/analisisModel.js';
 import notificacionModel from '../models/notificacionModel.js';
+import usuarioModel from '../models/usuarioModel.js';
 import analisisController from './analisisController.js';
 
 function mockRes() {
@@ -56,7 +57,20 @@ describe('realizar', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    const crearSpy = vi.spyOn(analisisModel, 'crear');
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 42.5 } };
+    const res = mockRes();
+
+    await analisisController.realizar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(crearSpy).not.toHaveBeenCalled();
+  });
+
   it('crea el análisis, notifica al paciente y devuelve 201', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockResolvedValue(analisis);
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 42.5 } };
@@ -75,6 +89,7 @@ describe('realizar', () => {
   });
 
   it('no falla la creación aunque la notificación no se pueda crear', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockResolvedValue(analisis);
     vi.spyOn(notificacionModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -90,6 +105,7 @@ describe('realizar', () => {
   it('devuelve 404 si el paciente no existe', async () => {
     const error = new Error('violación de llave foránea');
     error.code = '23503';
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 999, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockRejectedValue(error);
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 999, porcentaje: 10 } };
     const res = mockRes();
@@ -101,6 +117,7 @@ describe('realizar', () => {
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 10 } };
     const res = mockRes();
@@ -136,7 +153,20 @@ describe('listarPropios', () => {
 });
 
 describe('listarDePaciente', () => {
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    const listarSpy = vi.spyOn(analisisModel, 'listarPorPaciente');
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
+    const res = mockRes();
+
+    await analisisController.listarDePaciente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(listarSpy).not.toHaveBeenCalled();
+  });
+
   it('devuelve los análisis del paciente indicado por el médico', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
     const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
     const res = mockRes();
@@ -148,6 +178,7 @@ describe('listarDePaciente', () => {
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'listarPorPaciente').mockRejectedValue(new Error('fallo de conexión'));
     const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
     const res = mockRes();

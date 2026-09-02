@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 
 import analisisModel from '../models/analisisModel.js';
 import notificacionModel from '../models/notificacionModel.js';
+import usuarioModel from '../models/usuarioModel.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -49,9 +50,21 @@ describe('POST /analisis', () => {
     expect(res.status).toBe(400);
   });
 
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+
+    const res = await request(app)
+      .post('/analisis')
+      .set('Authorization', `Bearer ${token('medico', 2)}`)
+      .send({ pacienteId: 1, porcentaje: 42.5 });
+
+    expect(res.status).toBe(403);
+  });
+
   it('devuelve 404 si el paciente no existe', async () => {
     const error = new Error('violación de llave foránea');
     error.code = '23503';
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 999, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockRejectedValue(error);
 
     const res = await request(app)
@@ -63,6 +76,7 @@ describe('POST /analisis', () => {
   });
 
   it('el médico realiza el análisis, se notifica al paciente y devuelve 201', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'crear').mockResolvedValue(analisis);
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
@@ -125,7 +139,18 @@ describe('GET /analisis/:pacienteId', () => {
     expect(res.status).toBe(403);
   });
 
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+
+    const res = await request(app)
+      .get('/analisis/1')
+      .set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(403);
+  });
+
   it('devuelve los análisis del paciente indicado', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
 
     const res = await request(app)

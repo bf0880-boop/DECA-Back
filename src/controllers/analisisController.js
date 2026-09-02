@@ -1,5 +1,11 @@
 import analisisModel from '../models/analisisModel.js';
 import notificacionModel from '../models/notificacionModel.js';
+import usuarioModel from '../models/usuarioModel.js';
+
+async function estaAsignado(pacienteId, medicoId) {
+  const paciente = await usuarioModel.buscarPorId(pacienteId);
+  return !!paciente && String(paciente.medico_id) === String(medicoId);
+}
 
 function porcentajeValido(porcentaje) {
   return typeof porcentaje === 'number' && porcentaje >= 0 && porcentaje <= 100;
@@ -29,6 +35,10 @@ async function realizar(req, res) {
       return res.status(400).json({ ok: false, error: 'El porcentaje debe ser un número entre 0 y 100.' });
     }
 
+    if (!(await estaAsignado(pacienteId, req.usuario.id))) {
+      return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
+    }
+
     const analisis = await analisisModel.crear({ pacienteId, porcentaje });
 
     await notificarNuevoAnalisis(pacienteId);
@@ -53,6 +63,10 @@ async function listarPropios(req, res) {
 
 async function listarDePaciente(req, res) {
   try {
+    if (!(await estaAsignado(req.params.pacienteId, req.usuario.id))) {
+      return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
+    }
+
     const analisis = await analisisModel.listarPorPaciente(req.params.pacienteId);
     res.json({ ok: true, analisis });
   } catch (err) {

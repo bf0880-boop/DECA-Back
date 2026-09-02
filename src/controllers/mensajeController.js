@@ -40,6 +40,11 @@ function resolverParticipantes(req) {
   return null;
 }
 
+async function estanAsignados(pacienteId, medicoId) {
+  const paciente = await usuarioModel.buscarPorId(pacienteId);
+  return !!paciente && String(paciente.medico_id) === String(medicoId);
+}
+
 async function enviar(req, res) {
   try {
     const { contenido } = req.body;
@@ -51,6 +56,10 @@ async function enviar(req, res) {
 
     if (!contenido || !contenido.trim()) {
       return res.status(400).json({ ok: false, error: 'El mensaje no puede estar vacío.' });
+    }
+
+    if (!(await estanAsignados(participantes.pacienteId, participantes.medicoId))) {
+      return res.status(403).json({ ok: false, error: 'No tenés asignado a ese médico o paciente.' });
     }
 
     const mensaje = await mensajeModel.crear({
@@ -138,6 +147,10 @@ async function obtenerConversacion(req, res) {
 
     if (!participantes || !participantes.pacienteId || !participantes.medicoId) {
       return res.status(400).json({ ok: false, error: 'Falta indicar la conversación.' });
+    }
+
+    if (!(await estanAsignados(participantes.pacienteId, participantes.medicoId))) {
+      return res.status(403).json({ ok: false, error: 'No tenés asignado a ese médico o paciente.' });
     }
 
     const mensajes = await mensajeModel.obtenerConversacion(participantes.pacienteId, participantes.medicoId);

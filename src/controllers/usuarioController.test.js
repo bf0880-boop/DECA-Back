@@ -168,20 +168,33 @@ describe('perfil', () => {
 });
 
 describe('listar', () => {
-  it('devuelve la lista de pacientes', async () => {
+  it('devuelve todos los pacientes para un admin', async () => {
     const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
-    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
-    const req = {};
+    const listarTodosSpy = vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+    const req = { usuario: { id: 1, rol: 'admin' } };
     const res = mockRes();
 
     await usuarioController.listar(req, res);
 
+    expect(listarTodosSpy).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ ok: true, pacientes });
+  });
+
+  it('devuelve solo los pacientes asignados cuando lo pide un médico', async () => {
+    const pacientes = [{ id: 1, nombre: 'Juana', medico_id: 2 }];
+    const listarPorMedicoSpy = vi.spyOn(usuarioModel, 'listarPorMedico').mockResolvedValue(pacientes);
+    const req = { usuario: { id: 2, rol: 'medico' } };
+    const res = mockRes();
+
+    await usuarioController.listar(req, res);
+
+    expect(listarPorMedicoSpy).toHaveBeenCalledWith(2);
     expect(res.json).toHaveBeenCalledWith({ ok: true, pacientes });
   });
 
   it('devuelve 500 si ocurre un error inesperado', async () => {
     vi.spyOn(usuarioModel, 'listarTodos').mockRejectedValue(new Error('fallo de conexión'));
-    const req = {};
+    const req = { usuario: { id: 1, rol: 'admin' } };
     const res = mockRes();
 
     await usuarioController.listar(req, res);

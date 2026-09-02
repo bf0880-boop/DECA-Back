@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import medicoModel from '../models/medicoModel.js';
+import usuarioModel from '../models/usuarioModel.js';
 import medicoController from './medicoController.js';
 
 function mockRes() {
@@ -169,15 +170,50 @@ describe('perfil', () => {
 });
 
 describe('listar', () => {
-  it('devuelve sólo los médicos verificados', async () => {
+  it('devuelve sólo los médicos verificados para un médico', async () => {
     const medicos = [{ id: 1, verificado: true }];
     vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
-    const req = {};
+    const req = { usuario: { id: 5, rol: 'medico' } };
     const res = mockRes();
 
     await medicoController.listar(req, res);
 
     expect(res.json).toHaveBeenCalledWith({ ok: true, medicos });
+  });
+
+  it('devuelve sólo los médicos verificados para un admin', async () => {
+    const medicos = [{ id: 1, verificado: true }];
+    vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+    const req = { usuario: { id: 1, rol: 'admin' } };
+    const res = mockRes();
+
+    await medicoController.listar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medicos });
+  });
+
+  it('devuelve solo el médico asignado cuando lo pide un paciente', async () => {
+    const medico = { id: 2, nombre: 'Laura' };
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    const req = { usuario: { id: 1, rol: 'paciente' } };
+    const res = mockRes();
+
+    await medicoController.listar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medicos: [medico] });
+  });
+
+  it('devuelve un array vacío si el paciente todavía no tiene médico asignado', async () => {
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: null });
+    const buscarMedicoSpy = vi.spyOn(medicoModel, 'buscarPorId');
+    const req = { usuario: { id: 1, rol: 'paciente' } };
+    const res = mockRes();
+
+    await medicoController.listar(req, res);
+
+    expect(buscarMedicoSpy).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medicos: [] });
   });
 });
 

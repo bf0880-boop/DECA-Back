@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import medicoModel from '../models/medicoModel.js';
+import usuarioModel from '../models/usuarioModel.js';
 
 async function registro(req, res) {
   try {
@@ -85,6 +86,12 @@ async function perfil(req, res) {
 
 async function listar(req, res) {
   try {
+    if (req.usuario.rol === 'paciente') {
+      const paciente = await usuarioModel.buscarPorId(req.usuario.id);
+      const medico = paciente?.medico_id ? await medicoModel.buscarPorId(paciente.medico_id) : null;
+      return res.json({ ok: true, medicos: medico ? [medico] : [] });
+    }
+
     const medicos = await medicoModel.listarVerificados();
     res.json({ ok: true, medicos });
   } catch (err) {

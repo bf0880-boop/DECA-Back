@@ -86,7 +86,9 @@ async function perfil(req, res) {
 
 async function listar(req, res) {
   try {
-    const pacientes = await usuarioModel.listarTodos();
+    const pacientes = req.usuario.rol === 'medico'
+      ? await usuarioModel.listarPorMedico(req.usuario.id)
+      : await usuarioModel.listarTodos();
     res.json({ ok: true, pacientes });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

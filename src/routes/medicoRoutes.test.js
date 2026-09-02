@@ -3,6 +3,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
 import medicoModel from '../models/medicoModel.js';
+import usuarioModel from '../models/usuarioModel.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -75,14 +76,25 @@ describe('GET /medicos/perfil', () => {
 });
 
 describe('GET /medicos', () => {
-  it('devuelve la lista de médicos verificados', async () => {
+  it('devuelve la lista de médicos verificados para un admin', async () => {
     const medicos = [{ id: 1, nombre: 'Carlos', verificado: true }];
     vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+
+    const res = await request(app).get('/medicos').set('Authorization', `Bearer ${token('admin', 1)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, medicos });
+  });
+
+  it('devuelve solo el médico asignado cuando lo pide un paciente', async () => {
+    const medico = { id: 2, nombre: 'Carlos', verificado: true };
+    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
 
     const res = await request(app).get('/medicos').set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, medicos });
+    expect(res.body).toEqual({ ok: true, medicos: [medico] });
   });
 });
 
