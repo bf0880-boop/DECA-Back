@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import usuarioModel from '../models/usuarioModel.js';
+import medicoModel from '../models/medicoModel.js';
 
 async function registro(req, res) {
   try {
@@ -92,4 +93,26 @@ async function listar(req, res) {
   }
 }
 
-export default { registro, login, perfil, listar };
+async function asignarMedico(req, res) {
+  try {
+    const { medicoId } = req.body;
+
+    if (medicoId) {
+      const medico = await medicoModel.buscarPorId(medicoId);
+      if (!medico) {
+        return res.status(400).json({ ok: false, error: 'El médico indicado no existe.' });
+      }
+    }
+
+    const paciente = await usuarioModel.asignarMedico(req.params.id, medicoId || null);
+    if (!paciente) {
+      return res.status(404).json({ ok: false, error: 'Paciente no encontrado.' });
+    }
+
+    res.json({ ok: true, paciente });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+export default { registro, login, perfil, listar, asignarMedico };

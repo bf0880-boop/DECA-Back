@@ -18,7 +18,7 @@ async function buscarPorMail(mail) {
 
 async function buscarPorId(id) {
   const result = await pool.query(
-    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social,
+    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, medico_id,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at
      FROM pacientes WHERE id = $1`,
     [id]
@@ -28,11 +28,20 @@ async function buscarPorId(id) {
 
 async function listarTodos() {
   const result = await pool.query(
-    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social,
+    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, medico_id,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at
      FROM pacientes ORDER BY apellido, nombre`
   );
   return result.rows;
 }
 
-export default { crear, buscarPorMail, buscarPorId, listarTodos };
+async function asignarMedico(id, medicoId) {
+  const result = await pool.query(
+    `UPDATE pacientes SET medico_id = $1, updated_at = NOW() WHERE id = $2
+     RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, medico_id`,
+    [medicoId || null, id]
+  );
+  return result.rows[0] || null;
+}
+
+export default { crear, buscarPorMail, buscarPorId, listarTodos, asignarMedico };

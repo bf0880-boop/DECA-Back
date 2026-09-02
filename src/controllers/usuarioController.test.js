@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import usuarioModel from '../models/usuarioModel.js';
+import medicoModel from '../models/medicoModel.js';
 import usuarioController from './usuarioController.js';
 
 function mockRes() {
@@ -187,5 +188,55 @@ describe('listar', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'fallo de conexión' });
+  });
+});
+
+describe('asignarMedico', () => {
+  it('devuelve 400 si el médico indicado no existe', async () => {
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(null);
+    const asignarSpy = vi.spyOn(usuarioModel, 'asignarMedico');
+    const req = { params: { id: '1' }, body: { medicoId: 99 } };
+    const res = mockRes();
+
+    await usuarioController.asignarMedico(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(asignarSpy).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 404 si el paciente no existe', async () => {
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue({ id: 2 });
+    vi.spyOn(usuarioModel, 'asignarMedico').mockResolvedValue(null);
+    const req = { params: { id: '99' }, body: { medicoId: 2 } };
+    const res = mockRes();
+
+    await usuarioController.asignarMedico(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('asigna el médico y devuelve el paciente actualizado', async () => {
+    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue({ id: 2 });
+    const paciente = { id: 1, nombre: 'Juana', medico_id: 2 };
+    vi.spyOn(usuarioModel, 'asignarMedico').mockResolvedValue(paciente);
+    const req = { params: { id: '1' }, body: { medicoId: 2 } };
+    const res = mockRes();
+
+    await usuarioController.asignarMedico(req, res);
+
+    expect(usuarioModel.asignarMedico).toHaveBeenCalledWith('1', 2);
+    expect(res.json).toHaveBeenCalledWith({ ok: true, paciente });
+  });
+
+  it('permite desasignar sin validar médico cuando medicoId es null', async () => {
+    const buscarSpy = vi.spyOn(medicoModel, 'buscarPorId');
+    vi.spyOn(usuarioModel, 'asignarMedico').mockResolvedValue({ id: 1, medico_id: null });
+    const req = { params: { id: '1' }, body: { medicoId: null } };
+    const res = mockRes();
+
+    await usuarioController.asignarMedico(req, res);
+
+    expect(buscarSpy).not.toHaveBeenCalled();
+    expect(usuarioModel.asignarMedico).toHaveBeenCalledWith('1', null);
   });
 });

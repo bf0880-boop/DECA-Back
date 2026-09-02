@@ -127,3 +127,33 @@ describe('listarTodos', () => {
     expect(resultado).toEqual([]);
   });
 });
+
+describe('asignarMedico', () => {
+  it('actualiza el medico_id del paciente y devuelve la fila actualizada', async () => {
+    const paciente = { id: 1, nombre: 'Juana', medico_id: 2 };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
+
+    const resultado = await usuarioModel.asignarMedico(1, 2);
+
+    expect(resultado).toEqual(paciente);
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('UPDATE pacientes SET medico_id');
+    expect(params).toEqual([2, 1]);
+  });
+
+  it('guarda null cuando se desasigna al médico', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ id: 1, medico_id: null }] });
+
+    await usuarioModel.asignarMedico(1, null);
+
+    expect(pool.query.mock.calls[0][1]).toEqual([null, 1]);
+  });
+
+  it('devuelve null si el paciente no existe', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    const resultado = await usuarioModel.asignarMedico(99, 2);
+
+    expect(resultado).toBeNull();
+  });
+});
