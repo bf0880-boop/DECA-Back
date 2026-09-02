@@ -10,21 +10,21 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /api/admins/login', () => {
+describe('POST /admins/login', () => {
   it('devuelve 401 con credenciales inválidas', async () => {
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(null);
 
     const res = await request(app)
-      .post('/api/admins/login')
+      .post('/admins/login')
       .send({ mail: 'ana@test.com', contrasena: 'secreta123' });
 
     expect(res.status).toBe(401);
   });
 });
 
-describe('GET /api/admins/perfil', () => {
+describe('GET /admins/perfil', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/admins/perfil');
+    const res = await request(app).get('/admins/perfil');
 
     expect(res.status).toBe(401);
   });
@@ -36,7 +36,7 @@ describe('GET /api/admins/perfil', () => {
       expiresIn: env.jwt.expiresIn,
     });
 
-    const res = await request(app).get('/api/admins/perfil').set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/admins/perfil').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, admin });

@@ -32,14 +32,14 @@ describe('GET /health/db', () => {
 
 describe('app', () => {
   it('devuelve 404 en una ruta que no existe', async () => {
-    const res = await request(app).get('/api/no-existe');
+    const res = await request(app).get('/no-existe');
 
     expect(res.status).toBe(404);
   });
 
   it('parsea el body en JSON', async () => {
     const res = await request(app)
-      .post('/api/usuarios/registro')
+      .post('/usuarios/registro')
       .set('Content-Type', 'application/json')
       .send({ nombre: 'Juana' });
 
@@ -48,7 +48,7 @@ describe('app', () => {
   });
 
   it('habilita CORS para el frontend', async () => {
-    const res = await request(app).get('/api/notificaciones');
+    const res = await request(app).get('/notificaciones');
 
     expect(res.headers['access-control-allow-origin']).toBe('*');
   });

@@ -24,9 +24,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('GET /api/notificaciones', () => {
+describe('GET /notificaciones', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/notificaciones');
+    const res = await request(app).get('/notificaciones');
 
     expect(res.status).toBe(401);
   });
@@ -35,7 +35,7 @@ describe('GET /api/notificaciones', () => {
     vi.spyOn(notificacionModel, 'listarPorUsuario').mockResolvedValue([notificacion]);
 
     const res = await request(app)
-      .get('/api/notificaciones')
+      .get('/notificaciones')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
@@ -44,9 +44,9 @@ describe('GET /api/notificaciones', () => {
   });
 });
 
-describe('PUT /api/notificaciones/:id/leida', () => {
+describe('PUT /notificaciones/:id/leida', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).put('/api/notificaciones/3/leida');
+    const res = await request(app).put('/notificaciones/3/leida');
 
     expect(res.status).toBe(401);
   });
@@ -55,7 +55,7 @@ describe('PUT /api/notificaciones/:id/leida', () => {
     vi.spyOn(notificacionModel, 'marcarLeida').mockResolvedValue(null);
 
     const res = await request(app)
-      .put('/api/notificaciones/3/leida')
+      .put('/notificaciones/3/leida')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(404);
@@ -66,7 +66,7 @@ describe('PUT /api/notificaciones/:id/leida', () => {
     vi.spyOn(notificacionModel, 'marcarLeida').mockResolvedValue(leida);
 
     const res = await request(app)
-      .put('/api/notificaciones/3/leida')
+      .put('/notificaciones/3/leida')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);

@@ -16,9 +16,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /api/usuarios/registro', () => {
+describe('POST /usuarios/registro', () => {
   it('devuelve 400 si faltan datos obligatorios', async () => {
-    const res = await request(app).post('/api/usuarios/registro').send({ nombre: 'Juana' });
+    const res = await request(app).post('/usuarios/registro').send({ nombre: 'Juana' });
 
     expect(res.status).toBe(400);
   });
@@ -27,7 +27,7 @@ describe('POST /api/usuarios/registro', () => {
     vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(null);
     vi.spyOn(usuarioModel, 'crear').mockResolvedValue({ id: 1, mail: 'juana@test.com' });
 
-    const res = await request(app).post('/api/usuarios/registro').send({
+    const res = await request(app).post('/usuarios/registro').send({
       nombre: 'Juana',
       apellido: 'Pérez',
       mail: 'juana@test.com',
@@ -41,21 +41,21 @@ describe('POST /api/usuarios/registro', () => {
   });
 });
 
-describe('POST /api/usuarios/login', () => {
+describe('POST /usuarios/login', () => {
   it('devuelve 401 con credenciales inválidas', async () => {
     vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(null);
 
     const res = await request(app)
-      .post('/api/usuarios/login')
+      .post('/usuarios/login')
       .send({ mail: 'juana@test.com', contrasena: 'secreta123' });
 
     expect(res.status).toBe(401);
   });
 });
 
-describe('GET /api/usuarios/perfil', () => {
+describe('GET /usuarios/perfil', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/usuarios/perfil');
+    const res = await request(app).get('/usuarios/perfil');
 
     expect(res.status).toBe(401);
   });
@@ -67,22 +67,22 @@ describe('GET /api/usuarios/perfil', () => {
       expiresIn: env.jwt.expiresIn,
     });
 
-    const res = await request(app).get('/api/usuarios/perfil').set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/usuarios/perfil').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, paciente });
   });
 });
 
-describe('GET /api/usuarios', () => {
+describe('GET /usuarios', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/usuarios');
+    const res = await request(app).get('/usuarios');
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 403 si el token es de un paciente', async () => {
-    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('paciente', 1)}`);
+    const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(403);
   });
@@ -91,7 +91,7 @@ describe('GET /api/usuarios', () => {
     const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
     vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
 
-    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('medico', 2)}`);
+    const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, pacientes });
@@ -101,7 +101,7 @@ describe('GET /api/usuarios', () => {
     const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
     vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
 
-    const res = await request(app).get('/api/usuarios').set('Authorization', `Bearer ${token('admin', 1)}`);
+    const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('admin', 1)}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, pacientes });

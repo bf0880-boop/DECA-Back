@@ -24,16 +24,16 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /api/analisis', () => {
+describe('POST /analisis', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).post('/api/analisis').send({ pacienteId: 1, porcentaje: 42.5 });
+    const res = await request(app).post('/analisis').send({ pacienteId: 1, porcentaje: 42.5 });
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 403 si lo intenta un paciente', async () => {
     const res = await request(app)
-      .post('/api/analisis')
+      .post('/analisis')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ pacienteId: 1, porcentaje: 42.5 });
 
@@ -42,7 +42,7 @@ describe('POST /api/analisis', () => {
 
   it('devuelve 400 si faltan datos', async () => {
     const res = await request(app)
-      .post('/api/analisis')
+      .post('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ pacienteId: 1 });
 
@@ -55,7 +55,7 @@ describe('POST /api/analisis', () => {
     vi.spyOn(analisisModel, 'crear').mockRejectedValue(error);
 
     const res = await request(app)
-      .post('/api/analisis')
+      .post('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ pacienteId: 999, porcentaje: 42.5 });
 
@@ -67,7 +67,7 @@ describe('POST /api/analisis', () => {
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
     const res = await request(app)
-      .post('/api/analisis')
+      .post('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ pacienteId: 1, porcentaje: 42.5 });
 
@@ -82,16 +82,16 @@ describe('POST /api/analisis', () => {
   });
 });
 
-describe('GET /api/analisis', () => {
+describe('GET /analisis', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/analisis');
+    const res = await request(app).get('/analisis');
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 403 si lo intenta un médico', async () => {
     const res = await request(app)
-      .get('/api/analisis')
+      .get('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(403);
@@ -101,7 +101,7 @@ describe('GET /api/analisis', () => {
     vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
 
     const res = await request(app)
-      .get('/api/analisis')
+      .get('/analisis')
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
@@ -110,16 +110,16 @@ describe('GET /api/analisis', () => {
   });
 });
 
-describe('GET /api/analisis/:pacienteId', () => {
+describe('GET /analisis/:pacienteId', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/analisis/1');
+    const res = await request(app).get('/analisis/1');
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 403 si lo intenta un paciente', async () => {
     const res = await request(app)
-      .get('/api/analisis/1')
+      .get('/analisis/1')
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(403);
@@ -129,7 +129,7 @@ describe('GET /api/analisis/:pacienteId', () => {
     vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
 
     const res = await request(app)
-      .get('/api/analisis/1')
+      .get('/analisis/1')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);

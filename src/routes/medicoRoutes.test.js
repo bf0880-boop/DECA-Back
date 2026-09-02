@@ -16,9 +16,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /api/medicos/registro', () => {
+describe('POST /medicos/registro', () => {
   it('devuelve 400 si faltan datos obligatorios', async () => {
-    const res = await request(app).post('/api/medicos/registro').send({ nombre: 'Ana' });
+    const res = await request(app).post('/medicos/registro').send({ nombre: 'Ana' });
 
     expect(res.status).toBe(400);
   });
@@ -27,7 +27,7 @@ describe('POST /api/medicos/registro', () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
     vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
 
-    const res = await request(app).post('/api/medicos/registro').send({
+    const res = await request(app).post('/medicos/registro').send({
       nombre: 'Ana',
       apellido: 'Ruiz',
       mail: 'ana@test.com',
@@ -41,21 +41,21 @@ describe('POST /api/medicos/registro', () => {
   });
 });
 
-describe('POST /api/medicos/login', () => {
+describe('POST /medicos/login', () => {
   it('devuelve 401 con credenciales inválidas', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
 
     const res = await request(app)
-      .post('/api/medicos/login')
+      .post('/medicos/login')
       .send({ mail: 'carlos@test.com', contrasena: 'secreta123' });
 
     expect(res.status).toBe(401);
   });
 });
 
-describe('GET /api/medicos/perfil', () => {
+describe('GET /medicos/perfil', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/medicos/perfil');
+    const res = await request(app).get('/medicos/perfil');
 
     expect(res.status).toBe(401);
   });
@@ -67,29 +67,29 @@ describe('GET /api/medicos/perfil', () => {
       expiresIn: env.jwt.expiresIn,
     });
 
-    const res = await request(app).get('/api/medicos/perfil').set('Authorization', `Bearer ${t}`);
+    const res = await request(app).get('/medicos/perfil').set('Authorization', `Bearer ${t}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, medico });
   });
 });
 
-describe('GET /api/medicos', () => {
+describe('GET /medicos', () => {
   it('devuelve la lista de médicos verificados', async () => {
     const medicos = [{ id: 1, nombre: 'Carlos', verificado: true }];
     vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
 
-    const res = await request(app).get('/api/medicos').set('Authorization', `Bearer ${token('paciente', 1)}`);
+    const res = await request(app).get('/medicos').set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, medicos });
   });
 });
 
-describe('GET /api/medicos/pendientes', () => {
+describe('GET /medicos/pendientes', () => {
   it('devuelve 403 si no es admin', async () => {
     const res = await request(app)
-      .get('/api/medicos/pendientes')
+      .get('/medicos/pendientes')
       .set('Authorization', `Bearer ${token('medico', 1)}`);
 
     expect(res.status).toBe(403);
@@ -100,7 +100,7 @@ describe('GET /api/medicos/pendientes', () => {
     vi.spyOn(medicoModel, 'listarPendientes').mockResolvedValue(medicos);
 
     const res = await request(app)
-      .get('/api/medicos/pendientes')
+      .get('/medicos/pendientes')
       .set('Authorization', `Bearer ${token('admin', 1)}`);
 
     expect(res.status).toBe(200);
@@ -108,10 +108,10 @@ describe('GET /api/medicos/pendientes', () => {
   });
 });
 
-describe('PUT /api/medicos/:id/aprobar', () => {
+describe('PUT /medicos/:id/aprobar', () => {
   it('devuelve 403 si no es admin', async () => {
     const res = await request(app)
-      .put('/api/medicos/2/aprobar')
+      .put('/medicos/2/aprobar')
       .set('Authorization', `Bearer ${token('medico', 1)}`);
 
     expect(res.status).toBe(403);
@@ -122,7 +122,7 @@ describe('PUT /api/medicos/:id/aprobar', () => {
     vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(medico);
 
     const res = await request(app)
-      .put('/api/medicos/2/aprobar')
+      .put('/medicos/2/aprobar')
       .set('Authorization', `Bearer ${token('admin', 1)}`);
 
     expect(res.status).toBe(200);
@@ -130,10 +130,10 @@ describe('PUT /api/medicos/:id/aprobar', () => {
   });
 });
 
-describe('DELETE /api/medicos/:id', () => {
+describe('DELETE /medicos/:id', () => {
   it('devuelve 403 si no es admin', async () => {
     const res = await request(app)
-      .delete('/api/medicos/2')
+      .delete('/medicos/2')
       .set('Authorization', `Bearer ${token('medico', 1)}`);
 
     expect(res.status).toBe(403);
@@ -143,7 +143,7 @@ describe('DELETE /api/medicos/:id', () => {
     vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(true);
 
     const res = await request(app)
-      .delete('/api/medicos/2')
+      .delete('/medicos/2')
       .set('Authorization', `Bearer ${token('admin', 1)}`);
 
     expect(res.status).toBe(200);

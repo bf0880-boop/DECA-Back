@@ -28,16 +28,16 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /api/mensajes', () => {
+describe('POST /mensajes', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).post('/api/mensajes').send({ contenido: 'Hola', medicoId: 2 });
+    const res = await request(app).post('/mensajes').send({ contenido: 'Hola', medicoId: 2 });
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 400 si falta el destinatario', async () => {
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Hola' });
 
@@ -46,7 +46,7 @@ describe('POST /api/mensajes', () => {
 
   it('devuelve 400 si el contenido está vacío', async () => {
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '   ', medicoId: 2 });
 
@@ -59,7 +59,7 @@ describe('POST /api/mensajes', () => {
     vi.spyOn(mensajeModel, 'crear').mockRejectedValue(error);
 
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Hola', medicoId: 999 });
 
@@ -73,7 +73,7 @@ describe('POST /api/mensajes', () => {
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '  Hola doctor  ', medicoId: 2 });
 
@@ -99,7 +99,7 @@ describe('POST /api/mensajes', () => {
     vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
 
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ contenido: 'Hola paciente', pacienteId: 1 });
 
@@ -119,7 +119,7 @@ describe('POST /api/mensajes', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const res = await request(app)
-      .post('/api/mensajes')
+      .post('/mensajes')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Hola doctor', medicoId: 2 });
 
@@ -128,9 +128,9 @@ describe('POST /api/mensajes', () => {
   });
 });
 
-describe('GET /api/mensajes/:contraparteId', () => {
+describe('GET /mensajes/:contraparteId', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).get('/api/mensajes/2');
+    const res = await request(app).get('/mensajes/2');
 
     expect(res.status).toBe(401);
   });
@@ -140,7 +140,7 @@ describe('GET /api/mensajes/:contraparteId', () => {
     vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
 
     const res = await request(app)
-      .get('/api/mensajes/2')
+      .get('/mensajes/2')
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
@@ -153,7 +153,7 @@ describe('GET /api/mensajes/:contraparteId', () => {
     vi.spyOn(mensajeModel, 'obtenerConversacion').mockResolvedValue(mensajes);
 
     const res = await request(app)
-      .get('/api/mensajes/1')
+      .get('/mensajes/1')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
@@ -161,16 +161,16 @@ describe('GET /api/mensajes/:contraparteId', () => {
   });
 });
 
-describe('PUT /api/mensajes/:id', () => {
+describe('PUT /mensajes/:id', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).put('/api/mensajes/7').send({ contenido: 'Nuevo' });
+    const res = await request(app).put('/mensajes/7').send({ contenido: 'Nuevo' });
 
     expect(res.status).toBe(401);
   });
 
   it('devuelve 400 si el contenido está vacío', async () => {
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '   ' });
 
@@ -181,7 +181,7 @@ describe('PUT /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(null);
 
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -192,7 +192,7 @@ describe('PUT /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(mensajeDelPaciente);
 
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 99)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -203,7 +203,7 @@ describe('PUT /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(mensajeDelPaciente);
 
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -215,7 +215,7 @@ describe('PUT /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'editar').mockResolvedValue(null);
 
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: 'Nuevo' });
 
@@ -228,7 +228,7 @@ describe('PUT /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'editar').mockResolvedValue(editado);
 
     const res = await request(app)
-      .put('/api/mensajes/7')
+      .put('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`)
       .send({ contenido: '  Hola doctora  ' });
 
@@ -238,9 +238,9 @@ describe('PUT /api/mensajes/:id', () => {
   });
 });
 
-describe('DELETE /api/mensajes/:id', () => {
+describe('DELETE /mensajes/:id', () => {
   it('devuelve 401 sin token', async () => {
-    const res = await request(app).delete('/api/mensajes/7');
+    const res = await request(app).delete('/mensajes/7');
 
     expect(res.status).toBe(401);
   });
@@ -249,7 +249,7 @@ describe('DELETE /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'buscarPorId').mockResolvedValue(mensajeDelPaciente);
 
     const res = await request(app)
-      .delete('/api/mensajes/7')
+      .delete('/mensajes/7')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(403);
@@ -260,7 +260,7 @@ describe('DELETE /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'eliminar').mockResolvedValue(null);
 
     const res = await request(app)
-      .delete('/api/mensajes/7')
+      .delete('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(409);
@@ -277,7 +277,7 @@ describe('DELETE /api/mensajes/:id', () => {
     vi.spyOn(mensajeModel, 'eliminar').mockResolvedValue(eliminado);
 
     const res = await request(app)
-      .delete('/api/mensajes/7')
+      .delete('/mensajes/7')
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
