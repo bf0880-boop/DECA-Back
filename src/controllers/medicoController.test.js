@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { auth, eliminarUsuarioAuth } from '../config/auth.js';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoController from './medicoController.js';
+
+vi.mock('../config/auth.js', () => ({
+  auth: { api: { signUpEmail: vi.fn(), signInEmail: vi.fn() } },
+  eliminarUsuarioAuth: vi.fn(),
+}));
 
 function mockRes() {
   return {
@@ -41,7 +46,10 @@ describe('registro', () => {
 
   it('crea el médico como no verificado y devuelve 201', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
+    auth.api.signUpEmail.mockResolvedValue({ user: { id: 'auth-1' } });
+    const crearSpy = vi
+      .spyOn(medicoModel, 'crear')
+      .mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
     const req = {
       body: {
         nombre: 'Ana',
@@ -56,8 +64,27 @@ describe('registro', () => {
 
     await medicoController.registro(req, res);
 
+    expect(auth.api.signUpEmail).toHaveBeenCalledWith({
+      body: { email: 'ana@test.com', password: 'secreta123', name: 'Ana Ruiz', role: 'medico' },
+    });
+    expect(crearSpy).toHaveBeenCalledWith(expect.objectContaining({ authUserId: 'auth-1' }));
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
+  });
+
+  it('borra el usuario de better-auth si falla la creación del perfil', async () => {
+    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
+    auth.api.signUpEmail.mockResolvedValue({ user: { id: 'auth-1' } });
+    vi.spyOn(medicoModel, 'crear').mockRejectedValue(new Error('dni duplicado'));
+    const req = {
+      body: { nombre: 'Ana', apellido: 'Ruiz', mail: 'ana@test.com', contrasena: 'secreta123', dni: '30111222' },
+    };
+    const res = mockRes();
+
+    await medicoController.registro(req, res);
+
+    expect(eliminarUsuarioAuth).toHaveBeenCalledWith('auth-1');
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });
 
@@ -84,7 +111,7 @@ describe('login', () => {
 
   it('devuelve 401 si la contraseña no coincide', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, contrasena: 'hash-guardado' });
-    vi.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+    auth.api.signInEmail.mockRejectedValue(new Error('Invalid credentials'));
     const req = { body: { mail: 'carlos@test.com', contrasena: 'incorrecta' } };
     const res = mockRes();
 
@@ -95,7 +122,7 @@ describe('login', () => {
 
   it('devuelve 403 si el médico todavía no fue aprobado', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, contrasena: 'hash-guardado', verificado: false });
-    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
     const req = { body: { mail: 'carlos@test.com', contrasena: 'secreta123' } };
     const res = mockRes();
 
@@ -114,8 +141,7 @@ describe('login', () => {
       verificado: true,
     };
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(medico);
-    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-    vi.spyOn(jwt, 'sign').mockReturnValue('token-simulado');
+    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
     const req = { body: { mail: medico.mail, contrasena: 'secreta123' } };
     const res = mockRes();
 

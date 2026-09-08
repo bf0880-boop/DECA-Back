@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import env from '../config/env.js';
+import { auth, eliminarUsuarioAuth } from '../config/auth.js';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoModel from '../models/medicoModel.js';
 
@@ -18,15 +17,26 @@ async function registro(req, res) {
     }
 
     const contrasenaHash = await bcrypt.hash(contrasena, 10);
-    const paciente = await usuarioModel.crear({
-      nombre,
-      apellido,
-      mail,
-      contrasenaHash,
-      fechaNacimiento,
-      dni,
-      obraSocial,
+    const { user } = await auth.api.signUpEmail({
+      body: { email: mail, password: contrasena, name: `${nombre} ${apellido}`, role: 'paciente' },
     });
+
+    let paciente;
+    try {
+      paciente = await usuarioModel.crear({
+        nombre,
+        apellido,
+        mail,
+        contrasenaHash,
+        fechaNacimiento,
+        dni,
+        obraSocial,
+        authUserId: user.id,
+      });
+    } catch (err) {
+      await eliminarUsuarioAuth(user.id);
+      throw err;
+    }
 
     res.status(201).json({ ok: true, paciente });
   } catch (err) {
@@ -47,18 +57,16 @@ async function login(req, res) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    const coincide = await bcrypt.compare(contrasena, paciente.contrasena);
-    if (!coincide) {
+    let sesion;
+    try {
+      sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
+    } catch (err) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    const token = jwt.sign({ id: paciente.id, mail: paciente.mail, rol: 'paciente' }, env.jwt.secret, {
-      expiresIn: env.jwt.expiresIn,
-    });
-
     res.json({
       ok: true,
-      token,
+      token: sesion.token,
       paciente: {
         id: paciente.id,
         nombre: paciente.nombre,

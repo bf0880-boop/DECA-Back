@@ -15,7 +15,7 @@ const app = express();
 app.use(cors());
 
 // Better Auth tiene que ir ANTES de express.json(): necesita leer el body crudo.
-app.all('/api/auth/*', toNodeHandler(auth));
+app.all('/auth/*', toNodeHandler(auth));
 
 app.use(express.json());
 

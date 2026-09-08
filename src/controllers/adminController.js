@@ -1,6 +1,4 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import env from '../config/env.js';
+import { auth } from '../config/auth.js';
 import adminModel from '../models/adminModel.js';
 
 async function login(req, res) {
@@ -16,18 +14,16 @@ async function login(req, res) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    const coincide = await bcrypt.compare(contrasena, admin.contrasena);
-    if (!coincide) {
+    let sesion;
+    try {
+      sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
+    } catch (err) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    const token = jwt.sign({ id: admin.id, mail: admin.mail, rol: 'admin' }, env.jwt.secret, {
-      expiresIn: env.jwt.expiresIn,
-    });
-
     res.json({
       ok: true,
-      token,
+      token: sesion.token,
       admin: {
         id: admin.id,
         nombre: admin.nombre,

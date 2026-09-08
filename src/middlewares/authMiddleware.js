@@ -1,16 +1,35 @@
-import jwt from 'jsonwebtoken';
-import env from '../config/env.js';
+import { fromNodeHeaders } from 'better-auth/node';
+import { auth } from '../config/auth.js';
+import usuarioModel from '../models/usuarioModel.js';
+import medicoModel from '../models/medicoModel.js';
+import adminModel from '../models/adminModel.js';
 
-function verificarToken(req, res, next) {
+const modeloPorRol = {
+  paciente: usuarioModel,
+  medico: medicoModel,
+  admin: adminModel,
+};
+
+async function verificarToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ ok: false, error: 'Token no provisto.' });
   }
 
-  const token = authHeader.slice('Bearer '.length);
-
   try {
-    req.usuario = jwt.verify(token, env.jwt.secret);
+    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+    if (!session) {
+      return res.status(401).json({ ok: false, error: 'Token inválido o expirado.' });
+    }
+
+    const { user } = session;
+    const modelo = modeloPorRol[user.role];
+    const perfil = modelo && (await modelo.buscarPorAuthUserId(user.id));
+    if (!perfil) {
+      return res.status(401).json({ ok: false, error: 'Token inválido o expirado.' });
+    }
+
+    req.usuario = { id: perfil.id, mail: user.email, rol: user.role };
     next();
   } catch (err) {
     return res.status(401).json({ ok: false, error: 'Token inválido o expirado.' });

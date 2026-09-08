@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { auth } from '../config/auth.js';
 import adminModel from '../models/adminModel.js';
 import adminController from './adminController.js';
+
+vi.mock('../config/auth.js', () => ({
+  auth: { api: { signInEmail: vi.fn() } },
+}));
 
 function mockRes() {
   return {
@@ -39,7 +42,7 @@ describe('login', () => {
 
   it('devuelve 401 si la contraseña no coincide', async () => {
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue({ id: 1, contrasena: 'hash-guardado' });
-    vi.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+    auth.api.signInEmail.mockRejectedValue(new Error('Invalid credentials'));
     const req = { body: { mail: 'ana@test.com', contrasena: 'incorrecta' } };
     const res = mockRes();
 
@@ -58,8 +61,7 @@ describe('login', () => {
       verificado: true,
     };
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(admin);
-    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-    vi.spyOn(jwt, 'sign').mockReturnValue('token-simulado');
+    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
     const req = { body: { mail: admin.mail, contrasena: 'secreta123' } };
     const res = mockRes();
 

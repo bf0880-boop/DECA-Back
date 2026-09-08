@@ -13,4 +13,12 @@ async function buscarPorMail(mail) {
   return result.rows[0] || null;
 }
 
-export default { buscarPorId, buscarPorMail };
+async function buscarPorAuthUserId(authUserId) {
+  const result = await pool.query(
+    'SELECT id, nombre, apellido, mail, verificado FROM admins WHERE auth_user_id = $1',
+    [authUserId]
+  );
+  return result.rows[0] || null;
+}
+
+export default { buscarPorId, buscarPorMail, buscarPorAuthUserId };
