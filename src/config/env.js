@@ -16,6 +16,10 @@ export default {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+  betterAuth: {
+    secret: process.env.BETTER_AUTH_SECRET,
+    baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  },
   verificationCodeTtlMinutes: Number(process.env.VERIFICATION_CODE_TTL_MINUTES) || 15,
   mail: {
     host: process.env.SMTP_HOST,
