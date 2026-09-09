@@ -1,5 +1,10 @@
 import bcrypt from 'bcryptjs';
-import { auth, eliminarUsuarioAuth } from '../config/auth.js';
+import {
+  auth,
+  eliminarUsuarioAuth,
+  enviarCodigoDeVerificacion,
+  esErrorMailNoVerificado,
+} from '../config/auth.js';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
 
@@ -29,7 +34,23 @@ async function registro(req, res) {
       throw err;
     }
 
-    res.status(201).json({ ok: true, medico });
+    // Un fallo del SMTP no tiene que tirar abajo un registro que ya quedó guardado:
+    // el médico siempre puede pedir otro código en POST /verificacion/enviar.
+    let codigoEnviado = true;
+    try {
+      await enviarCodigoDeVerificacion(mail);
+    } catch (err) {
+      console.error('No se pudo enviar el código de verificación:', err.message);
+      codigoEnviado = false;
+    }
+
+    res.status(201).json({
+      ok: true,
+      medico,
+      requiereVerificacion: true,
+      codigoEnviado,
+      mensaje: 'Te enviamos un código de verificación al mail. Después el administrador tiene que aprobar tu cuenta.',
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -52,6 +73,16 @@ async function login(req, res) {
     try {
       sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
     } catch (err) {
+      if (esErrorMailNoVerificado(err)) {
+        await enviarCodigoDeVerificacion(mail).catch((error) => {
+          console.error('No se pudo reenviar el código de verificación:', error.message);
+        });
+        return res.status(403).json({
+          ok: false,
+          requiereVerificacion: true,
+          error: 'Tenés que verificar tu mail. Te reenviamos el código.',
+        });
+      }
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 

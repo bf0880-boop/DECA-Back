@@ -11,6 +11,7 @@ const datos = {
   fechaNacimiento: '1990-01-01',
   dni: '12345678',
   obraSocial: 'OSDE',
+  authUserId: 'auth-1',
 };
 
 afterEach(() => {
@@ -35,6 +36,7 @@ describe('crear', () => {
       datos.fechaNacimiento,
       datos.dni,
       datos.obraSocial,
+      datos.authUserId,
     ]);
   });
 

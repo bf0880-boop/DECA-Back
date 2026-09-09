@@ -1,4 +1,4 @@
-import { auth } from '../config/auth.js';
+import { auth, enviarCodigoDeVerificacion, esErrorMailNoVerificado } from '../config/auth.js';
 import adminModel from '../models/adminModel.js';
 
 async function login(req, res) {
@@ -18,6 +18,16 @@ async function login(req, res) {
     try {
       sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
     } catch (err) {
+      if (esErrorMailNoVerificado(err)) {
+        await enviarCodigoDeVerificacion(mail).catch((error) => {
+          console.error('No se pudo reenviar el código de verificación:', error.message);
+        });
+        return res.status(403).json({
+          ok: false,
+          requiereVerificacion: true,
+          error: 'Tenés que verificar tu mail. Te reenviamos el código.',
+        });
+      }
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
