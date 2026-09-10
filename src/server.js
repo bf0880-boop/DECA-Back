@@ -28,4 +28,13 @@ app.get('/health', async (req, res) => {
  res.status(200).send("OK")
 });
 
+app.get('/health/db', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT NOW() AS now');
+    res.json({ ok: true, dbTime: rows[0].now });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 export default app;
