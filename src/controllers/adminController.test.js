@@ -1,19 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import { auth, enviarCodigoDeVerificacion, esErrorMailNoVerificado } from '../config/auth.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import adminModel from '../models/adminModel.js';
 import adminController from './adminController.js';
-
-vi.mock('../config/auth.js', () => ({
-  auth: { api: { signInEmail: vi.fn() } },
-  enviarCodigoDeVerificacion: vi.fn(),
-  esErrorMailNoVerificado: vi.fn(() => false),
-}));
-
-beforeEach(() => {
-  enviarCodigoDeVerificacion.mockReset().mockResolvedValue(undefined);
-  esErrorMailNoVerificado.mockReset().mockReturnValue(false);
-});
 
 function mockRes() {
   return {
@@ -49,29 +39,13 @@ describe('login', () => {
 
   it('devuelve 401 si la contraseña no coincide', async () => {
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue({ id: 1, contrasena: 'hash-guardado' });
-    auth.api.signInEmail.mockRejectedValue(new Error('Invalid credentials'));
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(false);
     const req = { body: { mail: 'ana@test.com', contrasena: 'incorrecta' } };
     const res = mockRes();
 
     await adminController.login(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-  });
-
-  it('devuelve 403 y reenvía el código si el mail todavía no está verificado', async () => {
-    vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue({ id: 1 });
-    auth.api.signInEmail.mockRejectedValue(new Error('Email not verified'));
-    esErrorMailNoVerificado.mockReturnValue(true);
-    const req = { body: { mail: 'ana@test.com', contrasena: 'secreta123' } };
-    const res = mockRes();
-
-    await adminController.login(req, res);
-
-    expect(enviarCodigoDeVerificacion).toHaveBeenCalledWith('ana@test.com');
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: false, requiereVerificacion: true })
-    );
   });
 
   it('devuelve el token y los datos del admin si las credenciales son correctas', async () => {
@@ -84,7 +58,8 @@ describe('login', () => {
       verificado: true,
     };
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(admin);
-    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+    vi.spyOn(jwt, 'sign').mockReturnValue('token-simulado');
     const req = { body: { mail: admin.mail, contrasena: 'secreta123' } };
     const res = mockRes();
 

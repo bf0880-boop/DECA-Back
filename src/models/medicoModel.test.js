@@ -19,14 +19,13 @@ describe('crear', () => {
       contrasenaHash: 'hash',
       dni: '30111222',
       matricula: 'MP-1',
-      authUserId: 'auth-1',
     });
 
     expect(resultado).toEqual(medico);
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO medicos');
     expect(sql).toContain('FALSE');
-    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', 'hash', '30111222', 'MP-1', 'auth-1']);
+    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', 'hash', '30111222', 'MP-1']);
   });
 });
 

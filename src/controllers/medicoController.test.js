@@ -1,27 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import bcrypt from 'bcryptjs';
-import {
-  auth,
-  eliminarUsuarioAuth,
-  enviarCodigoDeVerificacion,
-  esErrorMailNoVerificado,
-} from '../config/auth.js';
+import jwt from 'jsonwebtoken';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoController from './medicoController.js';
-
-vi.mock('../config/auth.js', () => ({
-  auth: { api: { signUpEmail: vi.fn(), signInEmail: vi.fn() } },
-  eliminarUsuarioAuth: vi.fn(),
-  enviarCodigoDeVerificacion: vi.fn(),
-  esErrorMailNoVerificado: vi.fn(() => false),
-}));
-
-beforeEach(() => {
-  enviarCodigoDeVerificacion.mockReset().mockResolvedValue(undefined);
-  esErrorMailNoVerificado.mockReset().mockReturnValue(false);
-});
 
 function mockRes() {
   return {
@@ -58,10 +41,7 @@ describe('registro', () => {
 
   it('crea el médico como no verificado y devuelve 201', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    auth.api.signUpEmail.mockResolvedValue({ user: { id: 'auth-1' } });
-    const crearSpy = vi
-      .spyOn(medicoModel, 'crear')
-      .mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
+    vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
     const req = {
       body: {
         nombre: 'Ana',
@@ -76,35 +56,8 @@ describe('registro', () => {
 
     await medicoController.registro(req, res);
 
-    expect(auth.api.signUpEmail).toHaveBeenCalledWith({
-      body: { email: 'ana@test.com', password: 'secreta123', name: 'Ana Ruiz', role: 'medico' },
-    });
-    expect(crearSpy).toHaveBeenCalledWith(expect.objectContaining({ authUserId: 'auth-1' }));
-    expect(enviarCodigoDeVerificacion).toHaveBeenCalledWith('ana@test.com');
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ok: true,
-        medico: { id: 1, mail: 'ana@test.com', verificado: false },
-        requiereVerificacion: true,
-        codigoEnviado: true,
-      })
-    );
-  });
-
-  it('borra el usuario de better-auth si falla la creación del perfil', async () => {
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    auth.api.signUpEmail.mockResolvedValue({ user: { id: 'auth-1' } });
-    vi.spyOn(medicoModel, 'crear').mockRejectedValue(new Error('dni duplicado'));
-    const req = {
-      body: { nombre: 'Ana', apellido: 'Ruiz', mail: 'ana@test.com', contrasena: 'secreta123', dni: '30111222' },
-    };
-    const res = mockRes();
-
-    await medicoController.registro(req, res);
-
-    expect(eliminarUsuarioAuth).toHaveBeenCalledWith('auth-1');
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
   });
 });
 
@@ -131,7 +84,7 @@ describe('login', () => {
 
   it('devuelve 401 si la contraseña no coincide', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, contrasena: 'hash-guardado' });
-    auth.api.signInEmail.mockRejectedValue(new Error('Invalid credentials'));
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(false);
     const req = { body: { mail: 'carlos@test.com', contrasena: 'incorrecta' } };
     const res = mockRes();
 
@@ -140,25 +93,9 @@ describe('login', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it('devuelve 403 y reenvía el código si el mail todavía no está verificado', async () => {
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, verificado: true });
-    auth.api.signInEmail.mockRejectedValue(new Error('Email not verified'));
-    esErrorMailNoVerificado.mockReturnValue(true);
-    const req = { body: { mail: 'carlos@test.com', contrasena: 'secreta123' } };
-    const res = mockRes();
-
-    await medicoController.login(req, res);
-
-    expect(enviarCodigoDeVerificacion).toHaveBeenCalledWith('carlos@test.com');
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: false, requiereVerificacion: true })
-    );
-  });
-
   it('devuelve 403 si el médico todavía no fue aprobado', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue({ id: 2, contrasena: 'hash-guardado', verificado: false });
-    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
     const req = { body: { mail: 'carlos@test.com', contrasena: 'secreta123' } };
     const res = mockRes();
 
@@ -177,7 +114,8 @@ describe('login', () => {
       verificado: true,
     };
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(medico);
-    auth.api.signInEmail.mockResolvedValue({ token: 'token-simulado' });
+    vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+    vi.spyOn(jwt, 'sign').mockReturnValue('token-simulado');
     const req = { body: { mail: medico.mail, contrasena: 'secreta123' } };
     const res = mockRes();
 

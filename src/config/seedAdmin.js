@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import pool from './db.js';
 
@@ -11,35 +10,11 @@ async function seedAdmin() {
   }
 
   const contrasenaHash = await bcrypt.hash(contrasena, 10);
-
-  const existente = await pool.query('SELECT auth_user_id FROM admins WHERE mail = $1', [mail]);
-  let authUserId = existente.rows[0]?.auth_user_id;
-
-  if (authUserId) {
-    await pool.query('UPDATE "user" SET name = $1 WHERE id = $2', [`${nombre} ${apellido}`, authUserId]);
-    await pool.query('UPDATE account SET password = $1, "updatedAt" = NOW() WHERE "userId" = $2', [
-      contrasenaHash,
-      authUserId,
-    ]);
-  } else {
-    authUserId = crypto.randomUUID();
-    await pool.query(
-      `INSERT INTO "user" (id, name, email, "emailVerified", role, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, TRUE, 'admin', NOW(), NOW())`,
-      [authUserId, `${nombre} ${apellido}`, mail]
-    );
-    await pool.query(
-      `INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
-       VALUES ($1, $2, 'credential', $2, $3, NOW(), NOW())`,
-      [crypto.randomUUID(), authUserId, contrasenaHash]
-    );
-  }
-
   await pool.query(
-    `INSERT INTO admins (nombre, apellido, mail, contrasena, verificado, auth_user_id)
-     VALUES ($1, $2, $3, $4, TRUE, $5)
-     ON CONFLICT (mail) DO UPDATE SET contrasena = EXCLUDED.contrasena, auth_user_id = EXCLUDED.auth_user_id`,
-    [nombre, apellido, mail, contrasenaHash, authUserId]
+    `INSERT INTO admins (nombre, apellido, mail, contrasena, verificado)
+     VALUES ($1, $2, $3, $4, TRUE)
+     ON CONFLICT (mail) DO UPDATE SET contrasena = EXCLUDED.contrasena`,
+    [nombre, apellido, mail, contrasenaHash]
   );
 
   console.log(`Admin ${mail} creado/actualizado correctamente.`);

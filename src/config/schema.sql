@@ -31,13 +31,6 @@ ALTER TABLE medicos ADD COLUMN IF NOT EXISTS dni VARCHAR(20);
 ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS medico_id INTEGER REFERENCES medicos(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_pacientes_medico_id ON pacientes(medico_id);
 
-ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS auth_user_id TEXT UNIQUE REFERENCES "user"(id) ON DELETE SET NULL;
-ALTER TABLE medicos ADD COLUMN IF NOT EXISTS auth_user_id TEXT UNIQUE REFERENCES "user"(id) ON DELETE SET NULL;
-ALTER TABLE admins ADD COLUMN IF NOT EXISTS auth_user_id TEXT UNIQUE REFERENCES "user"(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_pacientes_auth_user_id ON pacientes(auth_user_id);
-CREATE INDEX IF NOT EXISTS idx_medicos_auth_user_id ON medicos(auth_user_id);
-CREATE INDEX IF NOT EXISTS idx_admins_auth_user_id ON admins(auth_user_id);
-
 CREATE TABLE IF NOT EXISTS admins (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,

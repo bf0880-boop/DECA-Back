@@ -1,10 +1,6 @@
 import bcrypt from 'bcryptjs';
-import {
-  auth,
-  eliminarUsuarioAuth,
-  enviarCodigoDeVerificacion,
-  esErrorMailNoVerificado,
-} from '../config/auth.js';
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoModel from '../models/medicoModel.js';
 
@@ -22,44 +18,17 @@ async function registro(req, res) {
     }
 
     const contrasenaHash = await bcrypt.hash(contrasena, 10);
-    const { user } = await auth.api.signUpEmail({
-      body: { email: mail, password: contrasena, name: `${nombre} ${apellido}`, role: 'paciente' },
+    const paciente = await usuarioModel.crear({
+      nombre,
+      apellido,
+      mail,
+      contrasenaHash,
+      fechaNacimiento,
+      dni,
+      obraSocial,
     });
 
-    let paciente;
-    try {
-      paciente = await usuarioModel.crear({
-        nombre,
-        apellido,
-        mail,
-        contrasenaHash,
-        fechaNacimiento,
-        dni,
-        obraSocial,
-        authUserId: user.id,
-      });
-    } catch (err) {
-      await eliminarUsuarioAuth(user.id);
-      throw err;
-    }
-
-    // Un fallo del SMTP no tiene que tirar abajo un registro que ya quedó guardado:
-    // el paciente siempre puede pedir otro código en POST /verificacion/enviar.
-    let codigoEnviado = true;
-    try {
-      await enviarCodigoDeVerificacion(mail);
-    } catch (err) {
-      console.error('No se pudo enviar el código de verificación:', err.message);
-      codigoEnviado = false;
-    }
-
-    res.status(201).json({
-      ok: true,
-      paciente,
-      requiereVerificacion: true,
-      codigoEnviado,
-      mensaje: 'Te enviamos un código de verificación al mail para poder entrar.',
-    });
+    res.status(201).json({ ok: true, paciente });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -78,26 +47,18 @@ async function login(req, res) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    let sesion;
-    try {
-      sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
-    } catch (err) {
-      if (esErrorMailNoVerificado(err)) {
-        await enviarCodigoDeVerificacion(mail).catch((error) => {
-          console.error('No se pudo reenviar el código de verificación:', error.message);
-        });
-        return res.status(403).json({
-          ok: false,
-          requiereVerificacion: true,
-          error: 'Tenés que verificar tu mail. Te reenviamos el código.',
-        });
-      }
+    const coincide = await bcrypt.compare(contrasena, paciente.contrasena);
+    if (!coincide) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
+    const token = jwt.sign({ id: paciente.id, mail: paciente.mail, rol: 'paciente' }, env.jwt.secret, {
+      expiresIn: env.jwt.expiresIn,
+    });
+
     res.json({
       ok: true,
-      token: sesion.token,
+      token,
       paciente: {
         id: paciente.id,
         nombre: paciente.nombre,

@@ -1,27 +1,18 @@
 import pool from '../config/db.js';
 
-async function crear({ nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial, authUserId }) {
+async function crear({ nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial }) {
   const result = await pool.query(
-    `INSERT INTO pacientes (nombre, apellido, mail, contrasena, fecha_nacimiento, dni, obra_social, auth_user_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO pacientes (nombre, apellido, mail, contrasena, fecha_nacimiento, dni, obra_social)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at`,
-    [nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial || null, authUserId]
+    [nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial || null]
   );
   return result.rows[0];
 }
 
 async function buscarPorMail(mail) {
   const result = await pool.query('SELECT * FROM pacientes WHERE mail = $1', [mail]);
-  return result.rows[0] || null;
-}
-
-async function buscarPorAuthUserId(authUserId) {
-  const result = await pool.query(
-    `SELECT id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, medico_id
-     FROM pacientes WHERE auth_user_id = $1`,
-    [authUserId]
-  );
   return result.rows[0] || null;
 }
 
@@ -63,4 +54,4 @@ async function asignarMedico(id, medicoId) {
   return result.rows[0] || null;
 }
 
-export default { crear, buscarPorMail, buscarPorId, buscarPorAuthUserId, listarTodos, listarPorMedico, asignarMedico };
+export default { crear, buscarPorMail, buscarPorId, listarTodos, listarPorMedico, asignarMedico };

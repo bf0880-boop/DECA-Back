@@ -1,43 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 
-import { auth } from '../config/auth.js';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
-import adminModel from '../models/adminModel.js';
+import env from '../config/env.js';
 import app from '../server.js';
 
-vi.mock('../config/auth.js', () => ({
-  auth: {
-    api: {
-      signUpEmail: vi.fn(),
-      signInEmail: vi.fn(),
-      // Simula la sesión de Better Auth a partir de un bearer "rol:id" armado
-      // por el helper token() de este archivo, sin pasar por una base real.
-      getSession: vi.fn(async ({ headers }) => {
-        const match = headers.get('authorization')?.match(/^Bearer (\w+):(\d+)$/);
-        if (!match) return null;
-        const [, rol, id] = match;
-        return { user: { id, role: rol, email: `${rol}${id}@test.com` } };
-      }),
-    },
-  },
-  eliminarUsuarioAuth: vi.fn(),
-  enviarCodigoDeVerificacion: vi.fn(),
-  esErrorMailNoVerificado: vi.fn(() => false),
-}));
-
 function token(rol, id) {
-  return `${rol}:${id}`;
+  return jwt.sign({ id, mail: `${rol}${id}@test.com`, rol }, env.jwt.secret, {
+    expiresIn: env.jwt.expiresIn,
+  });
 }
-
-beforeEach(() => {
-  // El middleware busca el perfil por auth_user_id; en los tests ese id es
-  // directamente el id numérico que llevó el token, para no duplicar mocks.
-  vi.spyOn(usuarioModel, 'buscarPorAuthUserId').mockImplementation(async (id) => ({ id: Number(id) }));
-  vi.spyOn(medicoModel, 'buscarPorAuthUserId').mockImplementation(async (id) => ({ id: Number(id) }));
-  vi.spyOn(adminModel, 'buscarPorAuthUserId').mockImplementation(async (id) => ({ id: Number(id) }));
-});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -53,7 +27,6 @@ describe('POST /medicos/registro', () => {
   it('crea el médico como no verificado y devuelve 201', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
     vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
-    auth.api.signUpEmail.mockResolvedValue({ user: { id: 'auth-1' } });
 
     const res = await request(app).post('/medicos/registro').send({
       nombre: 'Ana',
@@ -65,9 +38,7 @@ describe('POST /medicos/registro', () => {
     });
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual(
-      expect.objectContaining({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } })
-    );
+    expect(res.body).toEqual({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
   });
 });
 
@@ -93,10 +64,11 @@ describe('GET /medicos/perfil', () => {
   it('devuelve el perfil con un token válido', async () => {
     const medico = { id: 2, nombre: 'Carlos', mail: 'carlos@test.com' };
     vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    const t = jwt.sign({ id: 2, mail: medico.mail, rol: 'medico' }, env.jwt.secret, {
+      expiresIn: env.jwt.expiresIn,
+    });
 
-    const res = await request(app)
-      .get('/medicos/perfil')
-      .set('Authorization', `Bearer ${token('medico', 2)}`);
+    const res = await request(app).get('/medicos/perfil').set('Authorization', `Bearer ${t}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, medico });

@@ -1,11 +1,11 @@
 import pool from '../config/db.js';
 
-async function crear({ nombre, apellido, mail, contrasenaHash, dni, matricula, authUserId }) {
+async function crear({ nombre, apellido, mail, contrasenaHash, dni, matricula }) {
   const result = await pool.query(
-    `INSERT INTO medicos (nombre, apellido, mail, contrasena, dni, matricula, verificado, auth_user_id)
-     VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7)
+    `INSERT INTO medicos (nombre, apellido, mail, contrasena, dni, matricula, verificado)
+     VALUES ($1, $2, $3, $4, $5, $6, FALSE)
      RETURNING id, nombre, apellido, mail, dni, matricula, verificado`,
-    [nombre, apellido, mail, contrasenaHash, dni, matricula || null, authUserId]
+    [nombre, apellido, mail, contrasenaHash, dni, matricula || null]
   );
   return result.rows[0];
 }
@@ -20,14 +20,6 @@ async function buscarPorId(id) {
 
 async function buscarPorMail(mail) {
   const result = await pool.query('SELECT * FROM medicos WHERE mail = $1', [mail]);
-  return result.rows[0] || null;
-}
-
-async function buscarPorAuthUserId(authUserId) {
-  const result = await pool.query(
-    'SELECT id, nombre, apellido, mail, dni, matricula, verificado FROM medicos WHERE auth_user_id = $1',
-    [authUserId]
-  );
   return result.rows[0] || null;
 }
 
@@ -62,13 +54,4 @@ async function eliminar(id) {
   return result.rowCount > 0;
 }
 
-export default {
-  crear,
-  buscarPorId,
-  buscarPorMail,
-  buscarPorAuthUserId,
-  listarVerificados,
-  listarPendientes,
-  aprobar,
-  eliminar,
-};
+export default { crear, buscarPorId, buscarPorMail, listarVerificados, listarPendientes, aprobar, eliminar };

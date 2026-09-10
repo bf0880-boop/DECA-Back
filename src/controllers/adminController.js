@@ -1,4 +1,6 @@
-import { auth, enviarCodigoDeVerificacion, esErrorMailNoVerificado } from '../config/auth.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 import adminModel from '../models/adminModel.js';
 
 async function login(req, res) {
@@ -14,26 +16,18 @@ async function login(req, res) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
-    let sesion;
-    try {
-      sesion = await auth.api.signInEmail({ body: { email: mail, password: contrasena } });
-    } catch (err) {
-      if (esErrorMailNoVerificado(err)) {
-        await enviarCodigoDeVerificacion(mail).catch((error) => {
-          console.error('No se pudo reenviar el código de verificación:', error.message);
-        });
-        return res.status(403).json({
-          ok: false,
-          requiereVerificacion: true,
-          error: 'Tenés que verificar tu mail. Te reenviamos el código.',
-        });
-      }
+    const coincide = await bcrypt.compare(contrasena, admin.contrasena);
+    if (!coincide) {
       return res.status(401).json({ ok: false, error: 'Credenciales inválidas.' });
     }
 
+    const token = jwt.sign({ id: admin.id, mail: admin.mail, rol: 'admin' }, env.jwt.secret, {
+      expiresIn: env.jwt.expiresIn,
+    });
+
     res.json({
       ok: true,
-      token: sesion.token,
+      token,
       admin: {
         id: admin.id,
         nombre: admin.nombre,
