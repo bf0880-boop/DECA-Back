@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
+import verificacionController from '../controllers/verificacionController.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -27,6 +28,7 @@ describe('POST /medicos/registro', () => {
   it('crea el médico como no verificado y devuelve 201', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
     vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
+    vi.spyOn(verificacionController, 'enviarCodigo').mockResolvedValue(undefined);
 
     const res = await request(app).post('/medicos/registro').send({
       nombre: 'Ana',

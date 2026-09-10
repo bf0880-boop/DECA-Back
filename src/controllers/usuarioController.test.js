@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoModel from '../models/medicoModel.js';
+import verificacionController from './verificacionController.js';
 import usuarioController from './usuarioController.js';
 
 function mockRes() {
@@ -53,9 +54,9 @@ describe('registro', () => {
   it('crea el paciente con la contraseña hasheada y devuelve 201', async () => {
     vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(null);
     vi.spyOn(bcrypt, 'hash').mockResolvedValue('hash-simulado');
-    const crearSpy = vi
-      .spyOn(usuarioModel, 'crear')
-      .mockResolvedValue({ id: 1, mail: datosRegistro.mail });
+    const paciente = { id: 1, mail: datosRegistro.mail };
+    const crearSpy = vi.spyOn(usuarioModel, 'crear').mockResolvedValue(paciente);
+    const enviarCodigoSpy = vi.spyOn(verificacionController, 'enviarCodigo').mockResolvedValue(undefined);
     const req = { body: datosRegistro };
     const res = mockRes();
 
@@ -65,8 +66,9 @@ describe('registro', () => {
     expect(crearSpy).toHaveBeenCalledWith(
       expect.objectContaining({ mail: datosRegistro.mail, contrasenaHash: 'hash-simulado' })
     );
+    expect(enviarCodigoSpy).toHaveBeenCalledWith('paciente', paciente);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ ok: true, paciente: { id: 1, mail: datosRegistro.mail } });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, paciente });
   });
 
   it('devuelve 500 si ocurre un error inesperado', async () => {
@@ -121,6 +123,7 @@ describe('login', () => {
       mail: 'juana@test.com',
       contrasena: 'hash-guardado',
       verificado: true,
+      mail_verificado: false,
     };
     vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(paciente);
     vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
@@ -139,6 +142,7 @@ describe('login', () => {
         apellido: paciente.apellido,
         mail: paciente.mail,
         verificado: paciente.verificado,
+        mail_verificado: paciente.mail_verificado,
       },
     });
   });

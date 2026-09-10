@@ -4,7 +4,7 @@ async function crear({ nombre, apellido, mail, contrasenaHash, dni, matricula })
   const result = await pool.query(
     `INSERT INTO medicos (nombre, apellido, mail, contrasena, dni, matricula, verificado)
      VALUES ($1, $2, $3, $4, $5, $6, FALSE)
-     RETURNING id, nombre, apellido, mail, dni, matricula, verificado`,
+     RETURNING id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado`,
     [nombre, apellido, mail, contrasenaHash, dni, matricula || null]
   );
   return result.rows[0];
@@ -12,7 +12,7 @@ async function crear({ nombre, apellido, mail, contrasenaHash, dni, matricula })
 
 async function buscarPorId(id) {
   const result = await pool.query(
-    'SELECT id, nombre, apellido, mail, dni, matricula, verificado FROM medicos WHERE id = $1',
+    'SELECT id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado FROM medicos WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import usuarioModel from '../models/usuarioModel.js';
 import medicoModel from '../models/medicoModel.js';
+import verificacionController from './verificacionController.js';
 
 async function registro(req, res) {
   try {
@@ -27,6 +28,8 @@ async function registro(req, res) {
       dni,
       obraSocial,
     });
+
+    await verificacionController.enviarCodigo('paciente', paciente);
 
     res.status(201).json({ ok: true, paciente });
   } catch (err) {
@@ -65,6 +68,7 @@ async function login(req, res) {
         apellido: paciente.apellido,
         mail: paciente.mail,
         verificado: paciente.verificado,
+        mail_verificado: paciente.mail_verificado,
       },
     });
   } catch (err) {

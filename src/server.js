@@ -7,6 +7,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import mensajeRoutes from './routes/mensajeRoutes.js';
 import notificacionRoutes from './routes/notificacionRoutes.js';
 import analisisRoutes from './routes/analisisRoutes.js';
+import verificacionRoutes from './routes/verificacionRoutes.js';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/admins', adminRoutes);
 app.use('/mensajes', mensajeRoutes);
 app.use('/notificaciones', notificacionRoutes);
 app.use('/analisis', analisisRoutes);
+app.use('/verificacion', verificacionRoutes);
 
 app.get('/', async (req, res) => {
   res.status(200).send("DECA API")

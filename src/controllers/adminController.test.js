@@ -56,6 +56,7 @@ describe('login', () => {
       mail: 'ana@test.com',
       contrasena: 'hash-guardado',
       verificado: true,
+      mail_verificado: false,
     };
     vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(admin);
     vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
@@ -74,6 +75,7 @@ describe('login', () => {
         apellido: admin.apellido,
         mail: admin.mail,
         verificado: admin.verificado,
+        mail_verificado: admin.mail_verificado,
       },
     });
   });

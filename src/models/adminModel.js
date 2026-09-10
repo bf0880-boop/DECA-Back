@@ -2,7 +2,7 @@ import pool from '../config/db.js';
 
 async function buscarPorId(id) {
   const result = await pool.query(
-    'SELECT id, nombre, apellido, mail, verificado FROM admins WHERE id = $1',
+    'SELECT id, nombre, apellido, mail, verificado, mail_verificado FROM admins WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;

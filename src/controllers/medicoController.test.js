@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
+import verificacionController from './verificacionController.js';
 import medicoController from './medicoController.js';
 
 function mockRes() {
@@ -41,7 +42,9 @@ describe('registro', () => {
 
   it('crea el médico como no verificado y devuelve 201', async () => {
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
+    const medico = { id: 1, mail: 'ana@test.com', verificado: false };
+    vi.spyOn(medicoModel, 'crear').mockResolvedValue(medico);
+    const enviarCodigoSpy = vi.spyOn(verificacionController, 'enviarCodigo').mockResolvedValue(undefined);
     const req = {
       body: {
         nombre: 'Ana',
@@ -56,8 +59,9 @@ describe('registro', () => {
 
     await medicoController.registro(req, res);
 
+    expect(enviarCodigoSpy).toHaveBeenCalledWith('medico', medico);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, medico });
   });
 });
 
@@ -112,6 +116,7 @@ describe('login', () => {
       mail: 'carlos@test.com',
       contrasena: 'hash-guardado',
       verificado: true,
+      mail_verificado: false,
     };
     vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(medico);
     vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
@@ -130,6 +135,7 @@ describe('login', () => {
         apellido: medico.apellido,
         mail: medico.mail,
         verificado: medico.verificado,
+        mail_verificado: medico.mail_verificado,
       },
     });
   });

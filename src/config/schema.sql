@@ -83,6 +83,10 @@ CREATE TABLE IF NOT EXISTS codigos_verificacion (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS mail_verificado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE medicos ADD COLUMN IF NOT EXISTS mail_verificado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS mail_verificado BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE INDEX IF NOT EXISTS idx_mensajes_paciente_id ON mensajes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_medico_id ON mensajes(medico_id);
 CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario ON notificaciones(usuario_tipo, usuario_id);

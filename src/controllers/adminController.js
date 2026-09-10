@@ -34,6 +34,7 @@ async function login(req, res) {
         apellido: admin.apellido,
         mail: admin.mail,
         verificado: admin.verificado,
+        mail_verificado: admin.mail_verificado,
       },
     });
   } catch (err) {

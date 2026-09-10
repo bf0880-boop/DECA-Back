@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
+import verificacionController from './verificacionController.js';
 
 async function registro(req, res) {
   try {
@@ -19,6 +20,8 @@ async function registro(req, res) {
 
     const contrasenaHash = await bcrypt.hash(contrasena, 10);
     const medico = await medicoModel.crear({ nombre, apellido, mail, contrasenaHash, dni, matricula });
+
+    await verificacionController.enviarCodigo('medico', medico);
 
     res.status(201).json({ ok: true, medico });
   } catch (err) {
@@ -64,6 +67,7 @@ async function login(req, res) {
         apellido: medico.apellido,
         mail: medico.mail,
         verificado: medico.verificado,
+        mail_verificado: medico.mail_verificado,
       },
     });
   } catch (err) {
