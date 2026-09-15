@@ -4,8 +4,6 @@ import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js'
 
 const router = Router();
 
-router.post('/registro', medicoController.registro);
-router.post('/login', medicoController.login);
 router.get('/perfil', verificarToken, medicoController.perfil);
 router.get('/pendientes', verificarToken, permitirRoles('admin'), medicoController.pendientes);
 router.get('/', verificarToken, medicoController.listar);

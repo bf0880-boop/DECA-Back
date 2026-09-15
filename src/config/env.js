@@ -16,12 +16,9 @@ export default {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
-  verificationCodeTtlMinutes: Number(process.env.VERIFICATION_CODE_TTL_MINUTES) || 15,
-  mail: {
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-    from: process.env.MAIL_FROM || 'DECA <no-reply@deca.local>',
+  oauth: {
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    microsoftClientId: process.env.MICROSOFT_CLIENT_ID,
+    microsoftTenant: process.env.MICROSOFT_TENANT || 'common',
   },
 };

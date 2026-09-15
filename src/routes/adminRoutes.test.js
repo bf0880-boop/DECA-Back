@@ -10,18 +10,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('POST /admins/login', () => {
-  it('devuelve 401 con credenciales inválidas', async () => {
-    vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(null);
-
-    const res = await request(app)
-      .post('/admins/login')
-      .send({ mail: 'ana@test.com', contrasena: 'secreta123' });
-
-    expect(res.status).toBe(401);
-  });
-});
-
 describe('GET /admins/perfil', () => {
   it('devuelve 401 sin token', async () => {
     const res = await request(app).get('/admins/perfil');

@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 
 import medicoModel from '../models/medicoModel.js';
 import usuarioModel from '../models/usuarioModel.js';
-import verificacionController from '../controllers/verificacionController.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -16,44 +15,6 @@ function token(rol, id) {
 
 afterEach(() => {
   vi.restoreAllMocks();
-});
-
-describe('POST /medicos/registro', () => {
-  it('devuelve 400 si faltan datos obligatorios', async () => {
-    const res = await request(app).post('/medicos/registro').send({ nombre: 'Ana' });
-
-    expect(res.status).toBe(400);
-  });
-
-  it('crea el médico como no verificado y devuelve 201', async () => {
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'crear').mockResolvedValue({ id: 1, mail: 'ana@test.com', verificado: false });
-    vi.spyOn(verificacionController, 'enviarCodigo').mockResolvedValue(undefined);
-
-    const res = await request(app).post('/medicos/registro').send({
-      nombre: 'Ana',
-      apellido: 'Ruiz',
-      mail: 'ana@test.com',
-      contrasena: 'secreta123',
-      dni: '30111222',
-      matricula: 'MP-1',
-    });
-
-    expect(res.status).toBe(201);
-    expect(res.body).toEqual({ ok: true, medico: { id: 1, mail: 'ana@test.com', verificado: false } });
-  });
-});
-
-describe('POST /medicos/login', () => {
-  it('devuelve 401 con credenciales inválidas', async () => {
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-
-    const res = await request(app)
-      .post('/medicos/login')
-      .send({ mail: 'carlos@test.com', contrasena: 'secreta123' });
-
-    expect(res.status).toBe(401);
-  });
 });
 
 describe('GET /medicos/perfil', () => {

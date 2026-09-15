@@ -55,3 +55,33 @@ describe('buscarPorMail', () => {
     expect(resultado).toBeNull();
   });
 });
+
+describe('buscarPorOauth', () => {
+  it('devuelve el admin vinculado a ese proveedor', async () => {
+    const admin = { id: 1, mail: 'ana@test.com', oauth_provider: 'google', oauth_id: 'google-sub-1' };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
+
+    const resultado = await adminModel.buscarPorOauth('google', 'google-sub-1');
+
+    expect(resultado).toEqual(admin);
+    expect(pool.query).toHaveBeenCalledWith(
+      'SELECT * FROM admins WHERE oauth_provider = $1 AND oauth_id = $2',
+      ['google', 'google-sub-1']
+    );
+  });
+});
+
+describe('vincularOauth', () => {
+  it('actualiza la fila con el proveedor y marca el mail como verificado', async () => {
+    const admin = { id: 1, mail_verificado: true };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
+
+    const resultado = await adminModel.vincularOauth(1, 'google', 'google-sub-1');
+
+    expect(resultado).toEqual(admin);
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('SET oauth_provider');
+    expect(sql).toContain('mail_verificado = TRUE');
+    expect(params).toEqual(['google', 'google-sub-1', 1]);
+  });
+});

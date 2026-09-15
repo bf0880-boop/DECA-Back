@@ -7,16 +7,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('crear', () => {
+describe('crearOauth', () => {
   it('inserta el médico como no verificado y lo devuelve sin la contraseña', async () => {
     const medico = { id: 3, nombre: 'Ana', apellido: 'Ruiz', mail: 'ana@test.com', dni: '30111222', matricula: 'MP-1', verificado: false };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.crear({
+    const resultado = await medicoModel.crearOauth({
       nombre: 'Ana',
       apellido: 'Ruiz',
       mail: 'ana@test.com',
-      contrasenaHash: 'hash',
+      oauthProvider: 'google',
+      oauthId: 'google-sub-3',
       dni: '30111222',
       matricula: 'MP-1',
     });
@@ -25,7 +26,7 @@ describe('crear', () => {
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO medicos');
     expect(sql).toContain('FALSE');
-    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', 'hash', '30111222', 'MP-1']);
+    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', '30111222', 'MP-1', 'google', 'google-sub-3']);
   });
 });
 
@@ -60,7 +61,7 @@ describe('buscarPorId', () => {
 
 describe('buscarPorMail', () => {
   it('devuelve el médico encontrado', async () => {
-    const medico = { id: 2, mail: 'carlos@test.com', contrasena: 'hash-guardado' };
+    const medico = { id: 2, mail: 'carlos@test.com' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
     const resultado = await medicoModel.buscarPorMail('carlos@test.com');
@@ -75,6 +76,36 @@ describe('buscarPorMail', () => {
     const resultado = await medicoModel.buscarPorMail('nadie@test.com');
 
     expect(resultado).toBeNull();
+  });
+});
+
+describe('buscarPorOauth', () => {
+  it('devuelve el médico vinculado a ese proveedor', async () => {
+    const medico = { id: 2, mail: 'carlos@test.com', oauth_provider: 'microsoft', oauth_id: 'ms-sub-2' };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
+
+    const resultado = await medicoModel.buscarPorOauth('microsoft', 'ms-sub-2');
+
+    expect(resultado).toEqual(medico);
+    expect(pool.query).toHaveBeenCalledWith(
+      'SELECT * FROM medicos WHERE oauth_provider = $1 AND oauth_id = $2',
+      ['microsoft', 'ms-sub-2']
+    );
+  });
+});
+
+describe('vincularOauth', () => {
+  it('actualiza la fila con el proveedor y marca el mail como verificado', async () => {
+    const medico = { id: 2, mail_verificado: true };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
+
+    const resultado = await medicoModel.vincularOauth(2, 'microsoft', 'ms-sub-2');
+
+    expect(resultado).toEqual(medico);
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('SET oauth_provider');
+    expect(sql).toContain('mail_verificado = TRUE');
+    expect(params).toEqual(['microsoft', 'ms-sub-2', 2]);
   });
 });
 

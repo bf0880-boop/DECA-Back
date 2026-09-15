@@ -39,12 +39,12 @@ describe('app', () => {
 
   it('parsea el body en JSON', async () => {
     const res = await request(app)
-      .post('/usuarios/registro')
+      .post('/auth/google')
       .set('Content-Type', 'application/json')
-      .send({ nombre: 'Juana' });
+      .send({});
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ ok: false, error: 'Faltan datos obligatorios.' });
+    expect(res.body).toEqual({ ok: false, error: 'Falta el credential.' });
   });
 
   it('habilita CORS para el frontend', async () => {

@@ -7,7 +7,8 @@ const datos = {
   nombre: 'Juana',
   apellido: 'Pérez',
   mail: 'juana@test.com',
-  contrasenaHash: 'hash-simulado',
+  oauthProvider: 'google',
+  oauthId: 'google-sub-1',
   fechaNacimiento: '1990-01-01',
   dni: '12345678',
   obraSocial: 'OSDE',
@@ -17,55 +18,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('crear', () => {
+describe('crearOauth', () => {
   it('inserta el paciente con los datos recibidos y devuelve la fila creada', async () => {
     const paciente = { id: 1, mail: datos.mail };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.crear(datos);
+    const resultado = await usuarioModel.crearOauth(datos);
 
     expect(resultado).toEqual(paciente);
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO pacientes');
+    expect(sql).toContain('mail_verificado');
     expect(params).toEqual([
       datos.nombre,
       datos.apellido,
       datos.mail,
-      datos.contrasenaHash,
       datos.fechaNacimiento,
       datos.dni,
       datos.obraSocial,
+      datos.oauthProvider,
+      datos.oauthId,
     ]);
   });
 
   it('guarda null si no se indica obra social', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ id: 1 }] });
 
-    await usuarioModel.crear({ ...datos, obraSocial: undefined });
+    await usuarioModel.crearOauth({ ...datos, obraSocial: undefined });
 
-    expect(pool.query.mock.calls[0][1][6]).toBeNull();
-  });
-
-  it('no devuelve la contraseña entre las columnas del RETURNING', async () => {
-    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ id: 1 }] });
-
-    await usuarioModel.crear(datos);
-
-    const returning = pool.query.mock.calls[0][0].split('RETURNING')[1];
-    expect(returning).toBeDefined();
-    expect(returning).not.toContain('contrasena');
+    expect(pool.query.mock.calls[0][1][5]).toBeNull();
   });
 
   it('propaga el error si falla la consulta', async () => {
     vi.spyOn(pool, 'query').mockRejectedValue(new Error('dni duplicado'));
 
-    await expect(usuarioModel.crear(datos)).rejects.toThrow('dni duplicado');
+    await expect(usuarioModel.crearOauth(datos)).rejects.toThrow('dni duplicado');
   });
 });
 
 describe('buscarPorMail', () => {
   it('devuelve el paciente encontrado', async () => {
-    const paciente = { id: 1, mail: datos.mail, contrasena: 'hash-guardado' };
+    const paciente = { id: 1, mail: datos.mail };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
     const resultado = await usuarioModel.buscarPorMail(datos.mail);
@@ -80,6 +73,44 @@ describe('buscarPorMail', () => {
     const resultado = await usuarioModel.buscarPorMail('nadie@test.com');
 
     expect(resultado).toBeNull();
+  });
+});
+
+describe('buscarPorOauth', () => {
+  it('devuelve el paciente vinculado a ese proveedor', async () => {
+    const paciente = { id: 1, mail: datos.mail, oauth_provider: 'google', oauth_id: 'google-sub-1' };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
+
+    const resultado = await usuarioModel.buscarPorOauth('google', 'google-sub-1');
+
+    expect(resultado).toEqual(paciente);
+    expect(pool.query).toHaveBeenCalledWith(
+      'SELECT * FROM pacientes WHERE oauth_provider = $1 AND oauth_id = $2',
+      ['google', 'google-sub-1']
+    );
+  });
+
+  it('devuelve null si no hay ningún paciente vinculado', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    const resultado = await usuarioModel.buscarPorOauth('google', 'no-existe');
+
+    expect(resultado).toBeNull();
+  });
+});
+
+describe('vincularOauth', () => {
+  it('actualiza la fila con el proveedor y marca el mail como verificado', async () => {
+    const paciente = { id: 1, mail_verificado: true };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
+
+    const resultado = await usuarioModel.vincularOauth(1, 'google', 'google-sub-1');
+
+    expect(resultado).toEqual(paciente);
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('SET oauth_provider');
+    expect(sql).toContain('mail_verificado = TRUE');
+    expect(params).toEqual(['google', 'google-sub-1', 1]);
   });
 });
 

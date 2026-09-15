@@ -91,4 +91,20 @@ CREATE INDEX IF NOT EXISTS idx_mensajes_paciente_id ON mensajes(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_medico_id ON mensajes(medico_id);
 CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario ON notificaciones(usuario_tipo, usuario_id);
 CREATE INDEX IF NOT EXISTS idx_analisis_paciente_id ON analisis(paciente_id);
-CREATE INDEX IF NOT EXISTS idx_codigos_verificacion_usuario ON codigos_verificacion(usuario_tipo, usuario_id);
+
+ALTER TABLE pacientes ALTER COLUMN contrasena DROP NOT NULL;
+ALTER TABLE medicos ALTER COLUMN contrasena DROP NOT NULL;
+ALTER TABLE admins ALTER COLUMN contrasena DROP NOT NULL;
+
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
+ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255);
+ALTER TABLE medicos ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
+ALTER TABLE medicos ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255);
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pacientes_oauth ON pacientes(oauth_provider, oauth_id) WHERE oauth_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_medicos_oauth ON medicos(oauth_provider, oauth_id) WHERE oauth_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_oauth ON admins(oauth_provider, oauth_id) WHERE oauth_id IS NOT NULL;
+
+DROP TABLE IF EXISTS codigos_verificacion;

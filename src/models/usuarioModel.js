@@ -1,18 +1,36 @@
 import pool from '../config/db.js';
 
-async function crear({ nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial }) {
+async function crearOauth({ nombre, apellido, mail, oauthProvider, oauthId, fechaNacimiento, dni, obraSocial }) {
   const result = await pool.query(
-    `INSERT INTO pacientes (nombre, apellido, mail, contrasena, fecha_nacimiento, dni, obra_social)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO pacientes (nombre, apellido, mail, fecha_nacimiento, dni, obra_social, oauth_provider, oauth_id, mail_verificado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
      RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, mail_verificado,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at`,
-    [nombre, apellido, mail, contrasenaHash, fechaNacimiento, dni, obraSocial || null]
+    [nombre, apellido, mail, fechaNacimiento, dni, obraSocial || null, oauthProvider, oauthId]
   );
   return result.rows[0];
 }
 
 async function buscarPorMail(mail) {
   const result = await pool.query('SELECT * FROM pacientes WHERE mail = $1', [mail]);
+  return result.rows[0] || null;
+}
+
+async function buscarPorOauth(provider, oauthId) {
+  const result = await pool.query(
+    'SELECT * FROM pacientes WHERE oauth_provider = $1 AND oauth_id = $2',
+    [provider, oauthId]
+  );
+  return result.rows[0] || null;
+}
+
+async function vincularOauth(id, provider, oauthId) {
+  const result = await pool.query(
+    `UPDATE pacientes SET oauth_provider = $1, oauth_id = $2, mail_verificado = TRUE, updated_at = NOW()
+     WHERE id = $3
+     RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, mail_verificado`,
+    [provider, oauthId, id]
+  );
   return result.rows[0] || null;
 }
 
@@ -54,4 +72,13 @@ async function asignarMedico(id, medicoId) {
   return result.rows[0] || null;
 }
 
-export default { crear, buscarPorMail, buscarPorId, listarTodos, listarPorMedico, asignarMedico };
+export default {
+  crearOauth,
+  buscarPorMail,
+  buscarPorOauth,
+  vincularOauth,
+  buscarPorId,
+  listarTodos,
+  listarPorMedico,
+  asignarMedico,
+};

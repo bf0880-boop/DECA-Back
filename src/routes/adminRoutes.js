@@ -4,7 +4,6 @@ import { verificarToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-router.post('/login', adminController.login);
 router.get('/perfil', verificarToken, adminController.perfil);
 
 export default router;

@@ -1,13 +1,31 @@
 import pool from '../config/db.js';
 
-async function crear({ nombre, apellido, mail, contrasenaHash, dni, matricula }) {
+async function crearOauth({ nombre, apellido, mail, oauthProvider, oauthId, dni, matricula }) {
   const result = await pool.query(
-    `INSERT INTO medicos (nombre, apellido, mail, contrasena, dni, matricula, verificado)
-     VALUES ($1, $2, $3, $4, $5, $6, FALSE)
+    `INSERT INTO medicos (nombre, apellido, mail, dni, matricula, verificado, oauth_provider, oauth_id, mail_verificado)
+     VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, TRUE)
      RETURNING id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado`,
-    [nombre, apellido, mail, contrasenaHash, dni, matricula || null]
+    [nombre, apellido, mail, dni, matricula || null, oauthProvider, oauthId]
   );
   return result.rows[0];
+}
+
+async function buscarPorOauth(provider, oauthId) {
+  const result = await pool.query(
+    'SELECT * FROM medicos WHERE oauth_provider = $1 AND oauth_id = $2',
+    [provider, oauthId]
+  );
+  return result.rows[0] || null;
+}
+
+async function vincularOauth(id, provider, oauthId) {
+  const result = await pool.query(
+    `UPDATE medicos SET oauth_provider = $1, oauth_id = $2, mail_verificado = TRUE, updated_at = NOW()
+     WHERE id = $3
+     RETURNING id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado`,
+    [provider, oauthId, id]
+  );
+  return result.rows[0] || null;
 }
 
 async function buscarPorId(id) {
@@ -54,4 +72,14 @@ async function eliminar(id) {
   return result.rowCount > 0;
 }
 
-export default { crear, buscarPorId, buscarPorMail, listarVerificados, listarPendientes, aprobar, eliminar };
+export default {
+  crearOauth,
+  buscarPorId,
+  buscarPorMail,
+  buscarPorOauth,
+  vincularOauth,
+  listarVerificados,
+  listarPendientes,
+  aprobar,
+  eliminar,
+};
