@@ -1,8 +1,8 @@
-import adminModel from '../models/adminModel.js';
+import adminService from '../services/adminService.js';
 
 async function perfil(req, res) {
   try {
-    const admin = await adminModel.buscarPorId(req.usuario.id);
+    const admin = await adminService.buscarPorId(req.usuario.id);
     if (!admin) {
       return res.status(404).json({ ok: false, error: 'Admin no encontrado.' });
     }

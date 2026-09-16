@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import medicoModel from '../models/medicoModel.js';
-import usuarioModel from '../models/usuarioModel.js';
+import medicoService from '../services/medicoService.js';
+import usuarioService from '../services/usuarioService.js';
 import medicoController from './medicoController.js';
 
 function mockRes() {
@@ -17,7 +17,7 @@ afterEach(() => {
 
 describe('perfil', () => {
   it('devuelve 404 si el médico no existe', async () => {
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(null);
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue(null);
     const req = { usuario: { id: 99 } };
     const res = mockRes();
 
@@ -28,7 +28,7 @@ describe('perfil', () => {
 
   it('devuelve los datos del médico', async () => {
     const medico = { id: 2, nombre: 'Carlos' };
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue(medico);
     const req = { usuario: { id: 2 } };
     const res = mockRes();
 
@@ -41,7 +41,7 @@ describe('perfil', () => {
 describe('listar', () => {
   it('devuelve sólo los médicos verificados para un médico', async () => {
     const medicos = [{ id: 1, verificado: true }];
-    vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+    vi.spyOn(medicoService, 'listarVerificados').mockResolvedValue(medicos);
     const req = { usuario: { id: 5, rol: 'medico' } };
     const res = mockRes();
 
@@ -52,7 +52,7 @@ describe('listar', () => {
 
   it('devuelve sólo los médicos verificados para un admin', async () => {
     const medicos = [{ id: 1, verificado: true }];
-    vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+    vi.spyOn(medicoService, 'listarVerificados').mockResolvedValue(medicos);
     const req = { usuario: { id: 1, rol: 'admin' } };
     const res = mockRes();
 
@@ -63,8 +63,8 @@ describe('listar', () => {
 
   it('devuelve solo el médico asignado cuando lo pide un paciente', async () => {
     const medico = { id: 2, nombre: 'Laura' };
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue(medico);
     const req = { usuario: { id: 1, rol: 'paciente' } };
     const res = mockRes();
 
@@ -74,8 +74,8 @@ describe('listar', () => {
   });
 
   it('devuelve un array vacío si el paciente todavía no tiene médico asignado', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: null });
-    const buscarMedicoSpy = vi.spyOn(medicoModel, 'buscarPorId');
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: null });
+    const buscarMedicoSpy = vi.spyOn(medicoService, 'buscarPorId');
     const req = { usuario: { id: 1, rol: 'paciente' } };
     const res = mockRes();
 
@@ -89,7 +89,7 @@ describe('listar', () => {
 describe('pendientes', () => {
   it('devuelve los médicos sin aprobar', async () => {
     const medicos = [{ id: 2, verificado: false }];
-    vi.spyOn(medicoModel, 'listarPendientes').mockResolvedValue(medicos);
+    vi.spyOn(medicoService, 'listarPendientes').mockResolvedValue(medicos);
     const req = {};
     const res = mockRes();
 
@@ -101,7 +101,7 @@ describe('pendientes', () => {
 
 describe('aprobar', () => {
   it('devuelve 404 si el médico no existe', async () => {
-    vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(null);
+    vi.spyOn(medicoService, 'aprobar').mockResolvedValue(null);
     const req = { params: { id: '99' } };
     const res = mockRes();
 
@@ -112,7 +112,7 @@ describe('aprobar', () => {
 
   it('devuelve el médico aprobado', async () => {
     const medico = { id: 2, verificado: true };
-    vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'aprobar').mockResolvedValue(medico);
     const req = { params: { id: '2' } };
     const res = mockRes();
 
@@ -124,7 +124,7 @@ describe('aprobar', () => {
 
 describe('eliminar', () => {
   it('devuelve 404 si el médico no existe', async () => {
-    vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(false);
+    vi.spyOn(medicoService, 'eliminar').mockResolvedValue(false);
     const req = { params: { id: '99' } };
     const res = mockRes();
 
@@ -134,7 +134,7 @@ describe('eliminar', () => {
   });
 
   it('devuelve ok si lo borró', async () => {
-    vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(true);
+    vi.spyOn(medicoService, 'eliminar').mockResolvedValue(true);
     const req = { params: { id: '2' } };
     const res = mockRes();
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import analisisModel from './analisisModel.js';
+import analisisService from './analisisService.js';
 
 const analisis = {
   id: 5,
@@ -18,7 +18,7 @@ describe('crear', () => {
   it('inserta el análisis y devuelve la fila creada', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
-    const resultado = await analisisModel.crear({ pacienteId: 1, porcentaje: 42.5 });
+    const resultado = await analisisService.crear({ pacienteId: 1, porcentaje: 42.5 });
 
     expect(resultado).toEqual(analisis);
     const [sql, params] = pool.query.mock.calls[0];
@@ -29,7 +29,7 @@ describe('crear', () => {
   it('devuelve la fecha convertida al horario argentino', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
-    await analisisModel.crear({ pacienteId: 1, porcentaje: 42.5 });
+    await analisisService.crear({ pacienteId: 1, porcentaje: 42.5 });
 
     expect(pool.query.mock.calls[0][0]).toContain("AT TIME ZONE 'America/Argentina/Buenos_Aires'");
   });
@@ -39,7 +39,7 @@ describe('crear', () => {
     error.code = '23503';
     vi.spyOn(pool, 'query').mockRejectedValue(error);
 
-    await expect(analisisModel.crear({ pacienteId: 999, porcentaje: 10 })).rejects.toMatchObject({
+    await expect(analisisService.crear({ pacienteId: 999, porcentaje: 10 })).rejects.toMatchObject({
       code: '23503',
     });
   });
@@ -49,7 +49,7 @@ describe('listarPorPaciente', () => {
   it('devuelve los análisis del paciente ordenados de más nuevo a más viejo', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
-    const resultado = await analisisModel.listarPorPaciente(1);
+    const resultado = await analisisService.listarPorPaciente(1);
 
     expect(resultado).toEqual([analisis]);
     const [sql, params] = pool.query.mock.calls[0];
@@ -61,7 +61,7 @@ describe('listarPorPaciente', () => {
   it('devuelve una lista vacía si el paciente no tiene análisis', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await analisisModel.listarPorPaciente(1);
+    const resultado = await analisisService.listarPorPaciente(1);
 
     expect(resultado).toEqual([]);
   });

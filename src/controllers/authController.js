@@ -1,14 +1,14 @@
 import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import oauthVerifier from '../services/oauthVerifier.js';
-import usuarioModel from '../models/usuarioModel.js';
-import medicoModel from '../models/medicoModel.js';
-import adminModel from '../models/adminModel.js';
+import usuarioService from '../services/usuarioService.js';
+import medicoService from '../services/medicoService.js';
+import adminService from '../services/adminService.js';
 
 const CUENTAS = [
-  { rol: 'paciente', modelo: usuarioModel, clave: 'paciente' },
-  { rol: 'medico', modelo: medicoModel, clave: 'medico' },
-  { rol: 'admin', modelo: adminModel, clave: 'admin' },
+  { rol: 'paciente', servicio: usuarioService, clave: 'paciente' },
+  { rol: 'medico', servicio: medicoService, clave: 'medico' },
+  { rol: 'admin', servicio: adminService, clave: 'admin' },
 ];
 
 function firmarSesion(id, mail, rol) {
@@ -16,10 +16,10 @@ function firmarSesion(id, mail, rol) {
 }
 
 async function buscarCuentaExistente(provider, identidad) {
-  for (const { rol, modelo, clave } of CUENTAS) {
-    let cuenta = await modelo.buscarPorOauth(provider, identidad.sub);
-    if (!cuenta) cuenta = await modelo.buscarPorMail(identidad.email);
-    if (cuenta) return { rol, modelo, clave, cuenta };
+  for (const { rol, servicio, clave } of CUENTAS) {
+    let cuenta = await servicio.buscarPorOauth(provider, identidad.sub);
+    if (!cuenta) cuenta = await servicio.buscarPorMail(identidad.email);
+    if (cuenta) return { rol, servicio, clave, cuenta };
   }
   return null;
 }
@@ -41,10 +41,10 @@ async function iniciar(req, res) {
     const encontrada = await buscarCuentaExistente(provider, identidad);
 
     if (encontrada) {
-      let { rol, clave, modelo, cuenta } = encontrada;
+      let { rol, clave, servicio, cuenta } = encontrada;
 
       if (!cuenta.oauth_id) {
-        cuenta = await modelo.vincularOauth(cuenta.id, provider, identidad.sub);
+        cuenta = await servicio.vincularOauth(cuenta.id, provider, identidad.sub);
       }
 
       if (rol === 'medico' && !cuenta.verificado) {
@@ -100,7 +100,7 @@ async function completarRegistro(req, res) {
         return res.status(400).json({ ok: false, error: 'Faltan datos obligatorios.' });
       }
 
-      const paciente = await usuarioModel.crearOauth({
+      const paciente = await usuarioService.crearOauth({
         nombre: ticket.nombre,
         apellido: ticket.apellido,
         mail: ticket.email,
@@ -120,7 +120,7 @@ async function completarRegistro(req, res) {
         return res.status(400).json({ ok: false, error: 'Faltan datos obligatorios.' });
       }
 
-      const medico = await medicoModel.crearOauth({
+      const medico = await medicoService.crearOauth({
         nombre: ticket.nombre,
         apellido: ticket.apellido,
         mail: ticket.email,

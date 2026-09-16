@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import medicoModel from './medicoModel.js';
+import medicoService from './medicoService.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -12,7 +12,7 @@ describe('crearOauth', () => {
     const medico = { id: 3, nombre: 'Ana', apellido: 'Ruiz', mail: 'ana@test.com', dni: '30111222', matricula: 'MP-1', verificado: false };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.crearOauth({
+    const resultado = await medicoService.crearOauth({
       nombre: 'Ana',
       apellido: 'Ruiz',
       mail: 'ana@test.com',
@@ -35,7 +35,7 @@ describe('buscarPorId', () => {
     const medico = { id: 2, nombre: 'Carlos', apellido: 'Gómez', mail: 'carlos@test.com', verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.buscarPorId(2);
+    const resultado = await medicoService.buscarPorId(2);
 
     expect(resultado).toEqual(medico);
     const [sql, params] = pool.query.mock.calls[0];
@@ -47,7 +47,7 @@ describe('buscarPorId', () => {
   it('devuelve null si el médico no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await medicoModel.buscarPorId(99);
+    const resultado = await medicoService.buscarPorId(99);
 
     expect(resultado).toBeNull();
   });
@@ -55,7 +55,7 @@ describe('buscarPorId', () => {
   it('propaga el error si falla la consulta', async () => {
     vi.spyOn(pool, 'query').mockRejectedValue(new Error('fallo de conexión'));
 
-    await expect(medicoModel.buscarPorId(2)).rejects.toThrow('fallo de conexión');
+    await expect(medicoService.buscarPorId(2)).rejects.toThrow('fallo de conexión');
   });
 });
 
@@ -64,7 +64,7 @@ describe('buscarPorMail', () => {
     const medico = { id: 2, mail: 'carlos@test.com' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.buscarPorMail('carlos@test.com');
+    const resultado = await medicoService.buscarPorMail('carlos@test.com');
 
     expect(resultado).toEqual(medico);
     expect(pool.query).toHaveBeenCalledWith('SELECT * FROM medicos WHERE mail = $1', ['carlos@test.com']);
@@ -73,7 +73,7 @@ describe('buscarPorMail', () => {
   it('devuelve null si no hay ningún médico con ese mail', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await medicoModel.buscarPorMail('nadie@test.com');
+    const resultado = await medicoService.buscarPorMail('nadie@test.com');
 
     expect(resultado).toBeNull();
   });
@@ -84,7 +84,7 @@ describe('buscarPorOauth', () => {
     const medico = { id: 2, mail: 'carlos@test.com', oauth_provider: 'microsoft', oauth_id: 'ms-sub-2' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.buscarPorOauth('microsoft', 'ms-sub-2');
+    const resultado = await medicoService.buscarPorOauth('microsoft', 'ms-sub-2');
 
     expect(resultado).toEqual(medico);
     expect(pool.query).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ describe('vincularOauth', () => {
     const medico = { id: 2, mail_verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.vincularOauth(2, 'microsoft', 'ms-sub-2');
+    const resultado = await medicoService.vincularOauth(2, 'microsoft', 'ms-sub-2');
 
     expect(resultado).toEqual(medico);
     const [sql, params] = pool.query.mock.calls[0];
@@ -113,7 +113,7 @@ describe('listarVerificados', () => {
   it('sólo pide los médicos aprobados', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    await medicoModel.listarVerificados();
+    await medicoService.listarVerificados();
 
     const [sql] = pool.query.mock.calls[0];
     expect(sql).toContain('WHERE verificado = TRUE');
@@ -124,7 +124,7 @@ describe('listarPendientes', () => {
   it('sólo pide los médicos sin aprobar', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    await medicoModel.listarPendientes();
+    await medicoService.listarPendientes();
 
     const [sql] = pool.query.mock.calls[0];
     expect(sql).toContain('WHERE verificado = FALSE');
@@ -136,7 +136,7 @@ describe('aprobar', () => {
     const medico = { id: 3, nombre: 'Ana', verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [medico] });
 
-    const resultado = await medicoModel.aprobar(3);
+    const resultado = await medicoService.aprobar(3);
 
     expect(resultado).toEqual(medico);
     const [sql, params] = pool.query.mock.calls[0];
@@ -147,7 +147,7 @@ describe('aprobar', () => {
   it('devuelve null si el médico no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await medicoModel.aprobar(99);
+    const resultado = await medicoService.aprobar(99);
 
     expect(resultado).toBeNull();
   });
@@ -157,7 +157,7 @@ describe('eliminar', () => {
   it('devuelve true si borró una fila', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rowCount: 1 });
 
-    const resultado = await medicoModel.eliminar(3);
+    const resultado = await medicoService.eliminar(3);
 
     expect(resultado).toBe(true);
     expect(pool.query).toHaveBeenCalledWith('DELETE FROM medicos WHERE id = $1', [3]);
@@ -166,7 +166,7 @@ describe('eliminar', () => {
   it('devuelve false si no existía', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rowCount: 0 });
 
-    const resultado = await medicoModel.eliminar(99);
+    const resultado = await medicoService.eliminar(99);
 
     expect(resultado).toBe(false);
   });

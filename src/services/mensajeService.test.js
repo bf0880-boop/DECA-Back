@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import mensajeModel from './mensajeModel.js';
+import mensajeService from './mensajeService.js';
 
 const mensaje = {
   id: 7,
@@ -20,7 +20,7 @@ describe('crear', () => {
   it('inserta el mensaje y devuelve la fila creada', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [mensaje] });
 
-    const resultado = await mensajeModel.crear({
+    const resultado = await mensajeService.crear({
       pacienteId: 1,
       medicoId: 2,
       emisor: 'paciente',
@@ -36,7 +36,7 @@ describe('crear', () => {
   it('devuelve las fechas convertidas al horario argentino', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [mensaje] });
 
-    await mensajeModel.crear({ pacienteId: 1, medicoId: 2, emisor: 'paciente', contenido: 'Hola' });
+    await mensajeService.crear({ pacienteId: 1, medicoId: 2, emisor: 'paciente', contenido: 'Hola' });
 
     expect(pool.query.mock.calls[0][0]).toContain("AT TIME ZONE 'America/Argentina/Buenos_Aires'");
   });
@@ -47,7 +47,7 @@ describe('crear', () => {
     vi.spyOn(pool, 'query').mockRejectedValue(error);
 
     await expect(
-      mensajeModel.crear({ pacienteId: 1, medicoId: 999, emisor: 'paciente', contenido: 'Hola' })
+      mensajeService.crear({ pacienteId: 1, medicoId: 999, emisor: 'paciente', contenido: 'Hola' })
     ).rejects.toMatchObject({ code: '23503' });
   });
 });
@@ -56,7 +56,7 @@ describe('obtenerConversacion', () => {
   it('devuelve los mensajes ordenados por fecha ascendente', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [mensaje] });
 
-    const resultado = await mensajeModel.obtenerConversacion(1, 2);
+    const resultado = await mensajeService.obtenerConversacion(1, 2);
 
     expect(resultado).toEqual([mensaje]);
     const [sql, params] = pool.query.mock.calls[0];
@@ -68,7 +68,7 @@ describe('obtenerConversacion', () => {
   it('devuelve una lista vacía si no hay mensajes', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await mensajeModel.obtenerConversacion(1, 2);
+    const resultado = await mensajeService.obtenerConversacion(1, 2);
 
     expect(resultado).toEqual([]);
   });
@@ -78,7 +78,7 @@ describe('buscarPorId', () => {
   it('devuelve el mensaje encontrado', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [mensaje] });
 
-    const resultado = await mensajeModel.buscarPorId(7);
+    const resultado = await mensajeService.buscarPorId(7);
 
     expect(resultado).toEqual(mensaje);
     expect(pool.query.mock.calls[0][1]).toEqual([7]);
@@ -87,7 +87,7 @@ describe('buscarPorId', () => {
   it('devuelve null si el mensaje no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await mensajeModel.buscarPorId(99);
+    const resultado = await mensajeService.buscarPorId(99);
 
     expect(resultado).toBeNull();
   });
@@ -95,7 +95,7 @@ describe('buscarPorId', () => {
   it('oculta el contenido de los mensajes eliminados', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ ...mensaje, contenido: null, eliminado: true }] });
 
-    await mensajeModel.buscarPorId(7);
+    await mensajeService.buscarPorId(7);
 
     expect(pool.query.mock.calls[0][0]).toContain('CASE WHEN eliminado_en IS NULL THEN contenido END AS contenido');
   });
@@ -106,7 +106,7 @@ describe('editar', () => {
     const editado = { ...mensaje, contenido: 'Hola doctora', editado_en: '2026-08-12T10:00:00.000' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [editado] });
 
-    const resultado = await mensajeModel.editar(7, 'Hola doctora');
+    const resultado = await mensajeService.editar(7, 'Hola doctora');
 
     expect(resultado).toEqual(editado);
     const [sql, params] = pool.query.mock.calls[0];
@@ -118,7 +118,7 @@ describe('editar', () => {
   it('no edita los mensajes ya eliminados y devuelve null', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await mensajeModel.editar(7, 'Hola doctora');
+    const resultado = await mensajeService.editar(7, 'Hola doctora');
 
     expect(resultado).toBeNull();
     expect(pool.query.mock.calls[0][0]).toContain('eliminado_en IS NULL');
@@ -130,7 +130,7 @@ describe('eliminar', () => {
     const eliminado = { ...mensaje, contenido: null, eliminado: true, eliminado_en: '2026-08-12T10:00:00.000' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [eliminado] });
 
-    const resultado = await mensajeModel.eliminar(7);
+    const resultado = await mensajeService.eliminar(7);
 
     expect(resultado).toEqual(eliminado);
     const [sql, params] = pool.query.mock.calls[0];
@@ -141,7 +141,7 @@ describe('eliminar', () => {
   it('devuelve null si el mensaje ya estaba eliminado', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await mensajeModel.eliminar(7);
+    const resultado = await mensajeService.eliminar(7);
 
     expect(resultado).toBeNull();
     expect(pool.query.mock.calls[0][0]).toContain('eliminado_en IS NULL');

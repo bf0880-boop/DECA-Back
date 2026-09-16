@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import adminModel from '../models/adminModel.js';
+import adminService from '../services/adminService.js';
 import adminController from './adminController.js';
 
 function mockRes() {
@@ -16,7 +16,7 @@ afterEach(() => {
 
 describe('perfil', () => {
   it('devuelve 404 si el admin no existe', async () => {
-    vi.spyOn(adminModel, 'buscarPorId').mockResolvedValue(null);
+    vi.spyOn(adminService, 'buscarPorId').mockResolvedValue(null);
     const req = { usuario: { id: 99 } };
     const res = mockRes();
 
@@ -27,7 +27,7 @@ describe('perfil', () => {
 
   it('devuelve los datos del admin', async () => {
     const admin = { id: 1, nombre: 'Ana' };
-    vi.spyOn(adminModel, 'buscarPorId').mockResolvedValue(admin);
+    vi.spyOn(adminService, 'buscarPorId').mockResolvedValue(admin);
     const req = { usuario: { id: 1 } };
     const res = mockRes();
 

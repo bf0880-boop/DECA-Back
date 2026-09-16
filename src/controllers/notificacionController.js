@@ -1,8 +1,8 @@
-import notificacionModel from '../models/notificacionModel.js';
+import notificacionService from '../services/notificacionService.js';
 
 async function listar(req, res) {
   try {
-    const notificaciones = await notificacionModel.listarPorUsuario(req.usuario.rol, req.usuario.id);
+    const notificaciones = await notificacionService.listarPorUsuario(req.usuario.rol, req.usuario.id);
 
     res.json({ ok: true, notificaciones });
   } catch (err) {
@@ -12,7 +12,7 @@ async function listar(req, res) {
 
 async function marcarLeida(req, res) {
   try {
-    const notificacion = await notificacionModel.marcarLeida(req.params.id, req.usuario.rol, req.usuario.id);
+    const notificacion = await notificacionService.marcarLeida(req.params.id, req.usuario.rol, req.usuario.id);
 
     if (!notificacion) {
       return res.status(404).json({ ok: false, error: 'La notificación no existe.' });

@@ -1,9 +1,9 @@
-import analisisModel from '../models/analisisModel.js';
-import notificacionModel from '../models/notificacionModel.js';
-import usuarioModel from '../models/usuarioModel.js';
+import analisisService from '../services/analisisService.js';
+import notificacionService from '../services/notificacionService.js';
+import usuarioService from '../services/usuarioService.js';
 
 async function estaAsignado(pacienteId, medicoId) {
-  const paciente = await usuarioModel.buscarPorId(pacienteId);
+  const paciente = await usuarioService.buscarPorId(pacienteId);
   return !!paciente && String(paciente.medico_id) === String(medicoId);
 }
 
@@ -13,7 +13,7 @@ function porcentajeValido(porcentaje) {
 
 async function notificarNuevoAnalisis(pacienteId) {
   try {
-    await notificacionModel.crear({
+    await notificacionService.crear({
       usuarioTipo: 'paciente',
       usuarioId: pacienteId,
       contenido: 'Recibiste un nuevo análisis.',
@@ -39,7 +39,7 @@ async function realizar(req, res) {
       return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
     }
 
-    const analisis = await analisisModel.crear({ pacienteId, porcentaje });
+    const analisis = await analisisService.crear({ pacienteId, porcentaje });
 
     await notificarNuevoAnalisis(pacienteId);
 
@@ -54,7 +54,7 @@ async function realizar(req, res) {
 
 async function listarPropios(req, res) {
   try {
-    const analisis = await analisisModel.listarPorPaciente(req.usuario.id);
+    const analisis = await analisisService.listarPorPaciente(req.usuario.id);
     res.json({ ok: true, analisis });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -67,7 +67,7 @@ async function listarDePaciente(req, res) {
       return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
     }
 
-    const analisis = await analisisModel.listarPorPaciente(req.params.pacienteId);
+    const analisis = await analisisService.listarPorPaciente(req.params.pacienteId);
     res.json({ ok: true, analisis });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

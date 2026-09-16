@@ -2,8 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import usuarioModel from '../models/usuarioModel.js';
-import medicoModel from '../models/medicoModel.js';
+import usuarioService from '../services/usuarioService.js';
+import medicoService from '../services/medicoService.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -26,7 +26,7 @@ describe('GET /usuarios/perfil', () => {
 
   it('devuelve el perfil con un token válido', async () => {
     const paciente = { id: 1, nombre: 'Juana', mail: 'juana@test.com' };
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue(paciente);
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue(paciente);
     const token = jwt.sign({ id: 1, mail: paciente.mail, rol: 'paciente' }, env.jwt.secret, {
       expiresIn: env.jwt.expiresIn,
     });
@@ -53,7 +53,7 @@ describe('GET /usuarios', () => {
 
   it('devuelve la lista de pacientes para un médico', async () => {
     const pacientes = [{ id: 1, nombre: 'Juana', medico_id: 2 }];
-    vi.spyOn(usuarioModel, 'listarPorMedico').mockResolvedValue(pacientes);
+    vi.spyOn(usuarioService, 'listarPorMedico').mockResolvedValue(pacientes);
 
     const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('medico', 2)}`);
 
@@ -63,7 +63,7 @@ describe('GET /usuarios', () => {
 
   it('devuelve la lista de pacientes para un admin', async () => {
     const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
-    vi.spyOn(usuarioModel, 'listarTodos').mockResolvedValue(pacientes);
+    vi.spyOn(usuarioService, 'listarTodos').mockResolvedValue(pacientes);
 
     const res = await request(app).get('/usuarios').set('Authorization', `Bearer ${token('admin', 1)}`);
 
@@ -90,8 +90,8 @@ describe('PUT /usuarios/:id/medico', () => {
 
   it('asigna el médico y devuelve el paciente actualizado para un admin', async () => {
     const paciente = { id: 1, nombre: 'Juana', medico_id: 2 };
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue({ id: 2 });
-    vi.spyOn(usuarioModel, 'asignarMedico').mockResolvedValue(paciente);
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue({ id: 2 });
+    vi.spyOn(usuarioService, 'asignarMedico').mockResolvedValue(paciente);
 
     const res = await request(app)
       .put('/usuarios/1/medico')

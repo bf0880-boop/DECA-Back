@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import adminModel from './adminModel.js';
+import adminService from './adminService.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -12,7 +12,7 @@ describe('buscarPorId', () => {
     const admin = { id: 1, nombre: 'Ana', apellido: 'Ríos', mail: 'ana@test.com', verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
 
-    const resultado = await adminModel.buscarPorId(1);
+    const resultado = await adminService.buscarPorId(1);
 
     expect(resultado).toEqual(admin);
     const [sql, params] = pool.query.mock.calls[0];
@@ -24,7 +24,7 @@ describe('buscarPorId', () => {
   it('devuelve null si el admin no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await adminModel.buscarPorId(99);
+    const resultado = await adminService.buscarPorId(99);
 
     expect(resultado).toBeNull();
   });
@@ -32,7 +32,7 @@ describe('buscarPorId', () => {
   it('propaga el error si falla la consulta', async () => {
     vi.spyOn(pool, 'query').mockRejectedValue(new Error('fallo de conexión'));
 
-    await expect(adminModel.buscarPorId(1)).rejects.toThrow('fallo de conexión');
+    await expect(adminService.buscarPorId(1)).rejects.toThrow('fallo de conexión');
   });
 });
 
@@ -41,7 +41,7 @@ describe('buscarPorMail', () => {
     const admin = { id: 1, mail: 'ana@test.com', contrasena: 'hash-guardado' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
 
-    const resultado = await adminModel.buscarPorMail('ana@test.com');
+    const resultado = await adminService.buscarPorMail('ana@test.com');
 
     expect(resultado).toEqual(admin);
     expect(pool.query).toHaveBeenCalledWith('SELECT * FROM admins WHERE mail = $1', ['ana@test.com']);
@@ -50,7 +50,7 @@ describe('buscarPorMail', () => {
   it('devuelve null si no hay ningún admin con ese mail', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await adminModel.buscarPorMail('nadie@test.com');
+    const resultado = await adminService.buscarPorMail('nadie@test.com');
 
     expect(resultado).toBeNull();
   });
@@ -61,7 +61,7 @@ describe('buscarPorOauth', () => {
     const admin = { id: 1, mail: 'ana@test.com', oauth_provider: 'google', oauth_id: 'google-sub-1' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
 
-    const resultado = await adminModel.buscarPorOauth('google', 'google-sub-1');
+    const resultado = await adminService.buscarPorOauth('google', 'google-sub-1');
 
     expect(resultado).toEqual(admin);
     expect(pool.query).toHaveBeenCalledWith(
@@ -76,7 +76,7 @@ describe('vincularOauth', () => {
     const admin = { id: 1, mail_verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [admin] });
 
-    const resultado = await adminModel.vincularOauth(1, 'google', 'google-sub-1');
+    const resultado = await adminService.vincularOauth(1, 'google', 'google-sub-1');
 
     expect(resultado).toEqual(admin);
     const [sql, params] = pool.query.mock.calls[0];

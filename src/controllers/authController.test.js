@@ -2,9 +2,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import jwt from 'jsonwebtoken';
 import env from '../config/env.js';
 import oauthVerifier from '../services/oauthVerifier.js';
-import usuarioModel from '../models/usuarioModel.js';
-import medicoModel from '../models/medicoModel.js';
-import adminModel from '../models/adminModel.js';
+import usuarioService from '../services/usuarioService.js';
+import medicoService from '../services/medicoService.js';
+import adminService from '../services/adminService.js';
 import authController from './authController.js';
 
 function mockRes() {
@@ -58,8 +58,8 @@ describe('iniciar', () => {
   it('inicia sesión directo si ya hay una cuenta vinculada a ese proveedor', async () => {
     vi.spyOn(oauthVerifier, 'verifyIdToken').mockResolvedValue(identidad);
     const paciente = { id: 1, mail: identidad.email, oauth_provider: 'google', oauth_id: identidad.sub };
-    vi.spyOn(usuarioModel, 'buscarPorOauth').mockResolvedValue(paciente);
-    const vincularSpy = vi.spyOn(usuarioModel, 'vincularOauth');
+    vi.spyOn(usuarioService, 'buscarPorOauth').mockResolvedValue(paciente);
+    const vincularSpy = vi.spyOn(usuarioService, 'vincularOauth');
     const req = { params: { provider: 'google' }, body: { credential: 'ok' } };
     const res = mockRes();
 
@@ -75,11 +75,11 @@ describe('iniciar', () => {
 
   it('vincula una cuenta vieja con contraseña que coincide por mail', async () => {
     vi.spyOn(oauthVerifier, 'verifyIdToken').mockResolvedValue(identidad);
-    vi.spyOn(usuarioModel, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(usuarioService, 'buscarPorOauth').mockResolvedValue(null);
     const cuentaVieja = { id: 1, mail: identidad.email, oauth_id: null };
-    vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(cuentaVieja);
+    vi.spyOn(usuarioService, 'buscarPorMail').mockResolvedValue(cuentaVieja);
     const vinculada = { ...cuentaVieja, oauth_provider: 'google', oauth_id: identidad.sub, mail_verificado: true };
-    const vincularSpy = vi.spyOn(usuarioModel, 'vincularOauth').mockResolvedValue(vinculada);
+    const vincularSpy = vi.spyOn(usuarioService, 'vincularOauth').mockResolvedValue(vinculada);
     const req = { params: { provider: 'google' }, body: { credential: 'ok' } };
     const res = mockRes();
 
@@ -92,11 +92,11 @@ describe('iniciar', () => {
 
   it('devuelve 403 si el médico existe pero todavía no fue aprobado', async () => {
     vi.spyOn(oauthVerifier, 'verifyIdToken').mockResolvedValue(identidad);
-    vi.spyOn(usuarioModel, 'buscarPorOauth').mockResolvedValue(null);
-    vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(usuarioService, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(usuarioService, 'buscarPorMail').mockResolvedValue(null);
+    vi.spyOn(medicoService, 'buscarPorOauth').mockResolvedValue(null);
     const medico = { id: 2, mail: identidad.email, oauth_id: identidad.sub, verificado: false };
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'buscarPorMail').mockResolvedValue(medico);
     const req = { params: { provider: 'google' }, body: { credential: 'ok' } };
     const res = mockRes();
 
@@ -107,12 +107,12 @@ describe('iniciar', () => {
 
   it('devuelve isNew y un regToken si no encuentra la cuenta en ninguna tabla', async () => {
     vi.spyOn(oauthVerifier, 'verifyIdToken').mockResolvedValue(identidad);
-    vi.spyOn(usuarioModel, 'buscarPorOauth').mockResolvedValue(null);
-    vi.spyOn(usuarioModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'buscarPorOauth').mockResolvedValue(null);
-    vi.spyOn(medicoModel, 'buscarPorMail').mockResolvedValue(null);
-    vi.spyOn(adminModel, 'buscarPorOauth').mockResolvedValue(null);
-    vi.spyOn(adminModel, 'buscarPorMail').mockResolvedValue(null);
+    vi.spyOn(usuarioService, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(usuarioService, 'buscarPorMail').mockResolvedValue(null);
+    vi.spyOn(medicoService, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(medicoService, 'buscarPorMail').mockResolvedValue(null);
+    vi.spyOn(adminService, 'buscarPorOauth').mockResolvedValue(null);
+    vi.spyOn(adminService, 'buscarPorMail').mockResolvedValue(null);
     const req = { params: { provider: 'google' }, body: { credential: 'ok' } };
     const res = mockRes();
 
@@ -162,7 +162,7 @@ describe('completarRegistro', () => {
 
   it('crea el paciente y devuelve el token de sesión', async () => {
     const paciente = { id: 5, mail: 'juana@test.com' };
-    const crearSpy = vi.spyOn(usuarioModel, 'crearOauth').mockResolvedValue(paciente);
+    const crearSpy = vi.spyOn(usuarioService, 'crearOauth').mockResolvedValue(paciente);
     const req = {
       body: {
         regToken: regToken(),
@@ -201,7 +201,7 @@ describe('completarRegistro', () => {
 
   it('crea el médico como pendiente de aprobación', async () => {
     const medico = { id: 6, mail: 'juana@test.com', verificado: false };
-    vi.spyOn(medicoModel, 'crearOauth').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'crearOauth').mockResolvedValue(medico);
     const req = { body: { regToken: regToken(), role: 'medico', dni: '30111222', matricula: 'MP-1' } };
     const res = mockRes();
 

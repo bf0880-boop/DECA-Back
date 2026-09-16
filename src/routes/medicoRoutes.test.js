@@ -2,8 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import medicoModel from '../models/medicoModel.js';
-import usuarioModel from '../models/usuarioModel.js';
+import medicoService from '../services/medicoService.js';
+import usuarioService from '../services/usuarioService.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -26,7 +26,7 @@ describe('GET /medicos/perfil', () => {
 
   it('devuelve el perfil con un token válido', async () => {
     const medico = { id: 2, nombre: 'Carlos', mail: 'carlos@test.com' };
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue(medico);
     const t = jwt.sign({ id: 2, mail: medico.mail, rol: 'medico' }, env.jwt.secret, {
       expiresIn: env.jwt.expiresIn,
     });
@@ -41,7 +41,7 @@ describe('GET /medicos/perfil', () => {
 describe('GET /medicos', () => {
   it('devuelve la lista de médicos verificados para un admin', async () => {
     const medicos = [{ id: 1, nombre: 'Carlos', verificado: true }];
-    vi.spyOn(medicoModel, 'listarVerificados').mockResolvedValue(medicos);
+    vi.spyOn(medicoService, 'listarVerificados').mockResolvedValue(medicos);
 
     const res = await request(app).get('/medicos').set('Authorization', `Bearer ${token('admin', 1)}`);
 
@@ -51,8 +51,8 @@ describe('GET /medicos', () => {
 
   it('devuelve solo el médico asignado cuando lo pide un paciente', async () => {
     const medico = { id: 2, nombre: 'Carlos', verificado: true };
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(medicoModel, 'buscarPorId').mockResolvedValue(medico);
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(medicoService, 'buscarPorId').mockResolvedValue(medico);
 
     const res = await request(app).get('/medicos').set('Authorization', `Bearer ${token('paciente', 1)}`);
 
@@ -72,7 +72,7 @@ describe('GET /medicos/pendientes', () => {
 
   it('devuelve la lista de médicos pendientes para un admin', async () => {
     const medicos = [{ id: 2, nombre: 'Ana', verificado: false }];
-    vi.spyOn(medicoModel, 'listarPendientes').mockResolvedValue(medicos);
+    vi.spyOn(medicoService, 'listarPendientes').mockResolvedValue(medicos);
 
     const res = await request(app)
       .get('/medicos/pendientes')
@@ -94,7 +94,7 @@ describe('PUT /medicos/:id/aprobar', () => {
 
   it('aprueba el médico para un admin', async () => {
     const medico = { id: 2, verificado: true };
-    vi.spyOn(medicoModel, 'aprobar').mockResolvedValue(medico);
+    vi.spyOn(medicoService, 'aprobar').mockResolvedValue(medico);
 
     const res = await request(app)
       .put('/medicos/2/aprobar')
@@ -115,7 +115,7 @@ describe('DELETE /medicos/:id', () => {
   });
 
   it('elimina el médico para un admin', async () => {
-    vi.spyOn(medicoModel, 'eliminar').mockResolvedValue(true);
+    vi.spyOn(medicoService, 'eliminar').mockResolvedValue(true);
 
     const res = await request(app)
       .delete('/medicos/2')

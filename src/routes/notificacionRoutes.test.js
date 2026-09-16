@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import notificacionModel from '../models/notificacionModel.js';
+import notificacionService from '../services/notificacionService.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -32,7 +32,7 @@ describe('GET /notificaciones', () => {
   });
 
   it('devuelve las notificaciones del usuario logueado', async () => {
-    vi.spyOn(notificacionModel, 'listarPorUsuario').mockResolvedValue([notificacion]);
+    vi.spyOn(notificacionService, 'listarPorUsuario').mockResolvedValue([notificacion]);
 
     const res = await request(app)
       .get('/notificaciones')
@@ -40,7 +40,7 @@ describe('GET /notificaciones', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, notificaciones: [notificacion] });
-    expect(notificacionModel.listarPorUsuario).toHaveBeenCalledWith('medico', 2);
+    expect(notificacionService.listarPorUsuario).toHaveBeenCalledWith('medico', 2);
   });
 });
 
@@ -52,7 +52,7 @@ describe('PUT /notificaciones/:id/leida', () => {
   });
 
   it('devuelve 404 si la notificación no existe o no es del usuario', async () => {
-    vi.spyOn(notificacionModel, 'marcarLeida').mockResolvedValue(null);
+    vi.spyOn(notificacionService, 'marcarLeida').mockResolvedValue(null);
 
     const res = await request(app)
       .put('/notificaciones/3/leida')
@@ -63,7 +63,7 @@ describe('PUT /notificaciones/:id/leida', () => {
 
   it('marca la notificación como leída y devuelve 200', async () => {
     const leida = { ...notificacion, leida: true };
-    vi.spyOn(notificacionModel, 'marcarLeida').mockResolvedValue(leida);
+    vi.spyOn(notificacionService, 'marcarLeida').mockResolvedValue(leida);
 
     const res = await request(app)
       .put('/notificaciones/3/leida')
@@ -71,6 +71,6 @@ describe('PUT /notificaciones/:id/leida', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, notificacion: leida });
-    expect(notificacionModel.marcarLeida).toHaveBeenCalledWith('3', 'medico', 2);
+    expect(notificacionService.marcarLeida).toHaveBeenCalledWith('3', 'medico', 2);
   });
 });

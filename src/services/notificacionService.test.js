@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import notificacionModel from './notificacionModel.js';
+import notificacionService from './notificacionService.js';
 
 const notificacion = {
   id: 3,
@@ -19,7 +19,7 @@ describe('crear', () => {
   it('inserta la notificación y devuelve la fila creada', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [notificacion] });
 
-    const resultado = await notificacionModel.crear({
+    const resultado = await notificacionService.crear({
       usuarioTipo: 'medico',
       usuarioId: 2,
       contenido: 'Juana Pérez te envió un mensaje',
@@ -34,7 +34,7 @@ describe('crear', () => {
   it('devuelve la fecha convertida al horario argentino', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [notificacion] });
 
-    await notificacionModel.crear({ usuarioTipo: 'paciente', usuarioId: 1, contenido: 'Hola' });
+    await notificacionService.crear({ usuarioTipo: 'paciente', usuarioId: 1, contenido: 'Hola' });
 
     expect(pool.query.mock.calls[0][0]).toContain("AT TIME ZONE 'America/Argentina/Buenos_Aires'");
   });
@@ -43,7 +43,7 @@ describe('crear', () => {
     vi.spyOn(pool, 'query').mockRejectedValue(new Error('tipo de usuario inválido'));
 
     await expect(
-      notificacionModel.crear({ usuarioTipo: 'otro', usuarioId: 1, contenido: 'Hola' })
+      notificacionService.crear({ usuarioTipo: 'otro', usuarioId: 1, contenido: 'Hola' })
     ).rejects.toThrow('tipo de usuario inválido');
   });
 });
@@ -52,7 +52,7 @@ describe('listarPorUsuario', () => {
   it('devuelve las notificaciones del usuario ordenadas de la más nueva a la más vieja', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [notificacion] });
 
-    const resultado = await notificacionModel.listarPorUsuario('medico', 2);
+    const resultado = await notificacionService.listarPorUsuario('medico', 2);
 
     expect(resultado).toEqual([notificacion]);
     const [sql, params] = pool.query.mock.calls[0];
@@ -64,7 +64,7 @@ describe('listarPorUsuario', () => {
   it('devuelve una lista vacía si el usuario no tiene notificaciones', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await notificacionModel.listarPorUsuario('paciente', 1);
+    const resultado = await notificacionService.listarPorUsuario('paciente', 1);
 
     expect(resultado).toEqual([]);
   });
@@ -75,7 +75,7 @@ describe('marcarLeida', () => {
     const leida = { ...notificacion, leida: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [leida] });
 
-    const resultado = await notificacionModel.marcarLeida(3, 'medico', 2);
+    const resultado = await notificacionService.marcarLeida(3, 'medico', 2);
 
     expect(resultado).toEqual(leida);
     const [sql, params] = pool.query.mock.calls[0];
@@ -86,7 +86,7 @@ describe('marcarLeida', () => {
   it('solo actualiza notificaciones del propio usuario', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await notificacionModel.marcarLeida(3, 'paciente', 99);
+    const resultado = await notificacionService.marcarLeida(3, 'paciente', 99);
 
     expect(resultado).toBeNull();
     expect(pool.query.mock.calls[0][0]).toContain('WHERE id = $1 AND usuario_tipo = $2 AND usuario_id = $3');

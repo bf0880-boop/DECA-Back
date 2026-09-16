@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import adminModel from '../models/adminModel.js';
+import adminService from '../services/adminService.js';
 import env from '../config/env.js';
 import app from '../server.js';
 
@@ -19,7 +19,7 @@ describe('GET /admins/perfil', () => {
 
   it('devuelve el perfil con un token válido', async () => {
     const admin = { id: 1, nombre: 'Ana', mail: 'ana@test.com' };
-    vi.spyOn(adminModel, 'buscarPorId').mockResolvedValue(admin);
+    vi.spyOn(adminService, 'buscarPorId').mockResolvedValue(admin);
     const token = jwt.sign({ id: 1, mail: admin.mail, rol: 'admin' }, env.jwt.secret, {
       expiresIn: env.jwt.expiresIn,
     });

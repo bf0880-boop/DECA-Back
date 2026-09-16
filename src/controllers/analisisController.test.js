@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-import analisisModel from '../models/analisisModel.js';
-import notificacionModel from '../models/notificacionModel.js';
-import usuarioModel from '../models/usuarioModel.js';
+import analisisService from '../services/analisisService.js';
+import notificacionService from '../services/notificacionService.js';
+import usuarioService from '../services/usuarioService.js';
 import analisisController from './analisisController.js';
 
 function mockRes() {
@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe('realizar', () => {
   it('devuelve 400 si falta el paciente o el porcentaje', async () => {
-    const crearSpy = vi.spyOn(analisisModel, 'crear');
+    const crearSpy = vi.spyOn(analisisService, 'crear');
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1 } };
     const res = mockRes();
 
@@ -58,8 +58,8 @@ describe('realizar', () => {
   });
 
   it('devuelve 403 si el paciente no está asignado al médico', async () => {
-    const crearSpy = vi.spyOn(analisisModel, 'crear');
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const crearSpy = vi.spyOn(analisisService, 'crear');
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 42.5 } };
     const res = mockRes();
 
@@ -70,16 +70,16 @@ describe('realizar', () => {
   });
 
   it('crea el análisis, notifica al paciente y devuelve 201', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(analisisModel, 'crear').mockResolvedValue(analisis);
-    vi.spyOn(notificacionModel, 'crear').mockResolvedValue({});
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'crear').mockResolvedValue(analisis);
+    vi.spyOn(notificacionService, 'crear').mockResolvedValue({});
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 42.5 } };
     const res = mockRes();
 
     await analisisController.realizar(req, res);
 
-    expect(analisisModel.crear).toHaveBeenCalledWith({ pacienteId: 1, porcentaje: 42.5 });
-    expect(notificacionModel.crear).toHaveBeenCalledWith({
+    expect(analisisService.crear).toHaveBeenCalledWith({ pacienteId: 1, porcentaje: 42.5 });
+    expect(notificacionService.crear).toHaveBeenCalledWith({
       usuarioTipo: 'paciente',
       usuarioId: 1,
       contenido: 'Recibiste un nuevo análisis.',
@@ -89,9 +89,9 @@ describe('realizar', () => {
   });
 
   it('no falla la creación aunque la notificación no se pueda crear', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(analisisModel, 'crear').mockResolvedValue(analisis);
-    vi.spyOn(notificacionModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'crear').mockResolvedValue(analisis);
+    vi.spyOn(notificacionService, 'crear').mockRejectedValue(new Error('fallo de conexión'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 42.5 } };
     const res = mockRes();
@@ -105,8 +105,8 @@ describe('realizar', () => {
   it('devuelve 404 si el paciente no existe', async () => {
     const error = new Error('violación de llave foránea');
     error.code = '23503';
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 999, medico_id: 2 });
-    vi.spyOn(analisisModel, 'crear').mockRejectedValue(error);
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 999, medico_id: 2 });
+    vi.spyOn(analisisService, 'crear').mockRejectedValue(error);
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 999, porcentaje: 10 } };
     const res = mockRes();
 
@@ -117,8 +117,8 @@ describe('realizar', () => {
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(analisisModel, 'crear').mockRejectedValue(new Error('fallo de conexión'));
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'crear').mockRejectedValue(new Error('fallo de conexión'));
     const req = { usuario: { id: 2, rol: 'medico' }, body: { pacienteId: 1, porcentaje: 10 } };
     const res = mockRes();
 
@@ -131,18 +131,18 @@ describe('realizar', () => {
 
 describe('listarPropios', () => {
   it('devuelve los análisis del paciente logueado', async () => {
-    vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
+    vi.spyOn(analisisService, 'listarPorPaciente').mockResolvedValue([analisis]);
     const req = { usuario: { id: 1, rol: 'paciente' } };
     const res = mockRes();
 
     await analisisController.listarPropios(req, res);
 
-    expect(analisisModel.listarPorPaciente).toHaveBeenCalledWith(1);
+    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1);
     expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: [analisis] });
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
-    vi.spyOn(analisisModel, 'listarPorPaciente').mockRejectedValue(new Error('fallo de conexión'));
+    vi.spyOn(analisisService, 'listarPorPaciente').mockRejectedValue(new Error('fallo de conexión'));
     const req = { usuario: { id: 1, rol: 'paciente' } };
     const res = mockRes();
 
@@ -154,8 +154,8 @@ describe('listarPropios', () => {
 
 describe('listarDePaciente', () => {
   it('devuelve 403 si el paciente no está asignado al médico', async () => {
-    const listarSpy = vi.spyOn(analisisModel, 'listarPorPaciente');
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const listarSpy = vi.spyOn(analisisService, 'listarPorPaciente');
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
     const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
     const res = mockRes();
 
@@ -166,20 +166,20 @@ describe('listarDePaciente', () => {
   });
 
   it('devuelve los análisis del paciente indicado por el médico', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(analisisModel, 'listarPorPaciente').mockResolvedValue([analisis]);
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'listarPorPaciente').mockResolvedValue([analisis]);
     const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
     const res = mockRes();
 
     await analisisController.listarDePaciente(req, res);
 
-    expect(analisisModel.listarPorPaciente).toHaveBeenCalledWith('1');
+    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith('1');
     expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: [analisis] });
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
-    vi.spyOn(usuarioModel, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
-    vi.spyOn(analisisModel, 'listarPorPaciente').mockRejectedValue(new Error('fallo de conexión'));
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'listarPorPaciente').mockRejectedValue(new Error('fallo de conexión'));
     const req = { usuario: { id: 2, rol: 'medico' }, params: { pacienteId: '1' } };
     const res = mockRes();
 

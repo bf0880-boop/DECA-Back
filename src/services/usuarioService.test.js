@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import pool from '../config/db.js';
-import usuarioModel from './usuarioModel.js';
+import usuarioService from './usuarioService.js';
 
 const datos = {
   nombre: 'Juana',
@@ -23,7 +23,7 @@ describe('crearOauth', () => {
     const paciente = { id: 1, mail: datos.mail };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.crearOauth(datos);
+    const resultado = await usuarioService.crearOauth(datos);
 
     expect(resultado).toEqual(paciente);
     const [sql, params] = pool.query.mock.calls[0];
@@ -44,7 +44,7 @@ describe('crearOauth', () => {
   it('guarda null si no se indica obra social', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ id: 1 }] });
 
-    await usuarioModel.crearOauth({ ...datos, obraSocial: undefined });
+    await usuarioService.crearOauth({ ...datos, obraSocial: undefined });
 
     expect(pool.query.mock.calls[0][1][5]).toBeNull();
   });
@@ -52,7 +52,7 @@ describe('crearOauth', () => {
   it('propaga el error si falla la consulta', async () => {
     vi.spyOn(pool, 'query').mockRejectedValue(new Error('dni duplicado'));
 
-    await expect(usuarioModel.crearOauth(datos)).rejects.toThrow('dni duplicado');
+    await expect(usuarioService.crearOauth(datos)).rejects.toThrow('dni duplicado');
   });
 });
 
@@ -61,7 +61,7 @@ describe('buscarPorMail', () => {
     const paciente = { id: 1, mail: datos.mail };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.buscarPorMail(datos.mail);
+    const resultado = await usuarioService.buscarPorMail(datos.mail);
 
     expect(resultado).toEqual(paciente);
     expect(pool.query).toHaveBeenCalledWith('SELECT * FROM pacientes WHERE mail = $1', [datos.mail]);
@@ -70,7 +70,7 @@ describe('buscarPorMail', () => {
   it('devuelve null si no hay ningún paciente con ese mail', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await usuarioModel.buscarPorMail('nadie@test.com');
+    const resultado = await usuarioService.buscarPorMail('nadie@test.com');
 
     expect(resultado).toBeNull();
   });
@@ -81,7 +81,7 @@ describe('buscarPorOauth', () => {
     const paciente = { id: 1, mail: datos.mail, oauth_provider: 'google', oauth_id: 'google-sub-1' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.buscarPorOauth('google', 'google-sub-1');
+    const resultado = await usuarioService.buscarPorOauth('google', 'google-sub-1');
 
     expect(resultado).toEqual(paciente);
     expect(pool.query).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ describe('buscarPorOauth', () => {
   it('devuelve null si no hay ningún paciente vinculado', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await usuarioModel.buscarPorOauth('google', 'no-existe');
+    const resultado = await usuarioService.buscarPorOauth('google', 'no-existe');
 
     expect(resultado).toBeNull();
   });
@@ -104,7 +104,7 @@ describe('vincularOauth', () => {
     const paciente = { id: 1, mail_verificado: true };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.vincularOauth(1, 'google', 'google-sub-1');
+    const resultado = await usuarioService.vincularOauth(1, 'google', 'google-sub-1');
 
     expect(resultado).toEqual(paciente);
     const [sql, params] = pool.query.mock.calls[0];
@@ -119,7 +119,7 @@ describe('buscarPorId', () => {
     const paciente = { id: 1, nombre: 'Juana' };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.buscarPorId(1);
+    const resultado = await usuarioService.buscarPorId(1);
 
     expect(resultado).toEqual(paciente);
     const [sql, params] = pool.query.mock.calls[0];
@@ -131,7 +131,7 @@ describe('buscarPorId', () => {
   it('devuelve null si el paciente no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await usuarioModel.buscarPorId(99);
+    const resultado = await usuarioService.buscarPorId(99);
 
     expect(resultado).toBeNull();
   });
@@ -142,7 +142,7 @@ describe('listarTodos', () => {
     const pacientes = [{ id: 1, nombre: 'Juana' }, { id: 2, nombre: 'Pedro' }];
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: pacientes });
 
-    const resultado = await usuarioModel.listarTodos();
+    const resultado = await usuarioService.listarTodos();
 
     expect(resultado).toEqual(pacientes);
     const [sql] = pool.query.mock.calls[0];
@@ -153,7 +153,7 @@ describe('listarTodos', () => {
   it('devuelve un array vacío si no hay pacientes', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await usuarioModel.listarTodos();
+    const resultado = await usuarioService.listarTodos();
 
     expect(resultado).toEqual([]);
   });
@@ -164,7 +164,7 @@ describe('asignarMedico', () => {
     const paciente = { id: 1, nombre: 'Juana', medico_id: 2 };
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [paciente] });
 
-    const resultado = await usuarioModel.asignarMedico(1, 2);
+    const resultado = await usuarioService.asignarMedico(1, 2);
 
     expect(resultado).toEqual(paciente);
     const [sql, params] = pool.query.mock.calls[0];
@@ -175,7 +175,7 @@ describe('asignarMedico', () => {
   it('guarda null cuando se desasigna al médico', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ id: 1, medico_id: null }] });
 
-    await usuarioModel.asignarMedico(1, null);
+    await usuarioService.asignarMedico(1, null);
 
     expect(pool.query.mock.calls[0][1]).toEqual([null, 1]);
   });
@@ -183,7 +183,7 @@ describe('asignarMedico', () => {
   it('devuelve null si el paciente no existe', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
-    const resultado = await usuarioModel.asignarMedico(99, 2);
+    const resultado = await usuarioService.asignarMedico(99, 2);
 
     expect(resultado).toBeNull();
   });

@@ -1,10 +1,10 @@
-import mensajeModel from '../models/mensajeModel.js';
-import usuarioModel from '../models/usuarioModel.js';
-import medicoModel from '../models/medicoModel.js';
-import notificacionModel from '../models/notificacionModel.js';
+import mensajeService from '../services/mensajeService.js';
+import usuarioService from '../services/usuarioService.js';
+import medicoService from '../services/medicoService.js';
+import notificacionService from '../services/notificacionService.js';
 
 async function obtenerNombre(rol, id) {
-  const usuario = rol === 'paciente' ? await usuarioModel.buscarPorId(id) : await medicoModel.buscarPorId(id);
+  const usuario = rol === 'paciente' ? await usuarioService.buscarPorId(id) : await medicoService.buscarPorId(id);
   return usuario ? `${usuario.nombre} ${usuario.apellido}` : null;
 }
 
@@ -16,7 +16,7 @@ async function notificarNuevoMensaje(req, participantes) {
     const destinatarioRol = req.usuario.rol === 'paciente' ? 'medico' : 'paciente';
     const destinatarioId = destinatarioRol === 'medico' ? participantes.medicoId : participantes.pacienteId;
 
-    await notificacionModel.crear({
+    await notificacionService.crear({
       usuarioTipo: destinatarioRol,
       usuarioId: destinatarioId,
       contenido: `${emisorNombre} te envió un mensaje`,
@@ -41,7 +41,7 @@ function resolverParticipantes(req) {
 }
 
 async function estanAsignados(pacienteId, medicoId) {
-  const paciente = await usuarioModel.buscarPorId(pacienteId);
+  const paciente = await usuarioService.buscarPorId(pacienteId);
   return !!paciente && String(paciente.medico_id) === String(medicoId);
 }
 
@@ -62,7 +62,7 @@ async function enviar(req, res) {
       return res.status(403).json({ ok: false, error: 'No tenés asignado a ese médico o paciente.' });
     }
 
-    const mensaje = await mensajeModel.crear({
+    const mensaje = await mensajeService.crear({
       ...participantes,
       emisor: req.usuario.rol,
       contenido: contenido.trim(),
@@ -86,7 +86,7 @@ function esParticipante(mensaje, usuario) {
 }
 
 async function buscarMensajePropio(req, res) {
-  const mensaje = await mensajeModel.buscarPorId(req.params.id);
+  const mensaje = await mensajeService.buscarPorId(req.params.id);
 
   if (!mensaje || !esParticipante(mensaje, req.usuario)) {
     res.status(404).json({ ok: false, error: 'El mensaje no existe.' });
@@ -112,7 +112,7 @@ async function editar(req, res) {
     const mensaje = await buscarMensajePropio(req, res);
     if (!mensaje) return;
 
-    const editado = await mensajeModel.editar(mensaje.id, contenido.trim());
+    const editado = await mensajeService.editar(mensaje.id, contenido.trim());
 
     if (!editado) {
       return res.status(409).json({ ok: false, error: 'No se puede editar un mensaje eliminado.' });
@@ -129,7 +129,7 @@ async function eliminar(req, res) {
     const mensaje = await buscarMensajePropio(req, res);
     if (!mensaje) return;
 
-    const eliminado = await mensajeModel.eliminar(mensaje.id);
+    const eliminado = await mensajeService.eliminar(mensaje.id);
 
     if (!eliminado) {
       return res.status(409).json({ ok: false, error: 'El mensaje ya estaba eliminado.' });
@@ -153,7 +153,7 @@ async function obtenerConversacion(req, res) {
       return res.status(403).json({ ok: false, error: 'No tenés asignado a ese médico o paciente.' });
     }
 
-    const mensajes = await mensajeModel.obtenerConversacion(participantes.pacienteId, participantes.medicoId);
+    const mensajes = await mensajeService.obtenerConversacion(participantes.pacienteId, participantes.medicoId);
 
     res.json({ ok: true, mensajes });
   } catch (err) {
