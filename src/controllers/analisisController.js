@@ -1,14 +1,11 @@
 import analisisService from '../services/analisisService.js';
+import inferenciaService, { ECGRechazado } from '../services/inferenciaService.js';
 import notificacionService from '../services/notificacionService.js';
 import usuarioService from '../services/usuarioService.js';
 
 async function estaAsignado(pacienteId, medicoId) {
   const paciente = await usuarioService.buscarPorId(pacienteId);
   return !!paciente && String(paciente.medico_id) === String(medicoId);
-}
-
-function porcentajeValido(porcentaje) {
-  return typeof porcentaje === 'number' && porcentaje >= 0 && porcentaje <= 100;
 }
 
 async function notificarNuevoAnalisis(pacienteId) {
@@ -25,26 +22,47 @@ async function notificarNuevoAnalisis(pacienteId) {
 
 async function realizar(req, res) {
   try {
-    const { pacienteId, porcentaje } = req.body;
+    const { pacienteId, frecuencia, derivaciones } = req.body;
 
-    if (!pacienteId || porcentaje === undefined || porcentaje === null) {
-      return res.status(400).json({ ok: false, error: 'Faltan datos obligatorios.' });
+    if (!pacienteId) {
+      return res.status(400).json({ ok: false, error: 'Falta el paciente.' });
     }
-
-    if (!porcentajeValido(porcentaje)) {
-      return res.status(400).json({ ok: false, error: 'El porcentaje debe ser un número entre 0 y 100.' });
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: 'Falta el archivo del ECG.' });
     }
-
     if (!(await estaAsignado(pacienteId, req.usuario.id))) {
       return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
     }
 
-    const analisis = await analisisService.crear({ pacienteId, porcentaje });
+    const resultado = await inferenciaService.analizar({
+      buffer: req.file.buffer,
+      nombreArchivo: req.file.originalname,
+      frecuencia,
+      derivaciones,
+    });
+
+    const analisis = await analisisService.crear({
+      pacienteId,
+      porcentaje: resultado.percentil,
+      banda: resultado.banda,
+      score: resultado.score,
+      modeloSha: resultado.modelo.sha256,
+    });
 
     await notificarNuevoAnalisis(pacienteId);
 
-    res.status(201).json({ ok: true, analisis });
+    // `interpretacion` y `calidad` no se guardan: son para mostrar en el momento.
+    // En los GET posteriores sólo vuelve lo que está en la base.
+    res.status(201).json({
+      ok: true,
+      analisis,
+      interpretacion: resultado.interpretacion,
+      calidad: resultado.calidad,
+    });
   } catch (err) {
+    if (err instanceof ECGRechazado) {
+      return res.status(err.status).json({ ok: false, error: err.message, codigo: err.codigo });
+    }
     if (err.code === '23503') {
       return res.status(404).json({ ok: false, error: 'El paciente no existe.' });
     }

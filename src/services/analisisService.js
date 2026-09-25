@@ -4,14 +4,15 @@ function enHorarioArgentino(columna) {
   return `to_char(${columna} AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ${columna}`;
 }
 
-const SELECT_FORMATEADO = `id, paciente_id, porcentaje, ${enHorarioArgentino('fecha_hora_entrega')}`;
+const SELECT_FORMATEADO =
+  `id, paciente_id, porcentaje, banda, score, modelo_sha, ${enHorarioArgentino('fecha_hora_entrega')}`;
 
-async function crear({ pacienteId, porcentaje }) {
+async function crear({ pacienteId, porcentaje, banda, score, modeloSha }) {
   const result = await pool.query(
-    `INSERT INTO analisis (paciente_id, porcentaje)
-     VALUES ($1, $2)
+    `INSERT INTO analisis (paciente_id, porcentaje, banda, score, modelo_sha)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING ${SELECT_FORMATEADO}`,
-    [pacienteId, porcentaje]
+    [pacienteId, porcentaje, banda, score, modeloSha]
   );
   return result.rows[0];
 }

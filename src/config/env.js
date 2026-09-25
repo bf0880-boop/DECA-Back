@@ -21,4 +21,8 @@ export default {
     microsoftClientId: process.env.MICROSOFT_CLIENT_ID,
     microsoftTenant: process.env.MICROSOFT_TENANT || 'common',
   },
+  inferencia: {
+    url: process.env.DECA_INFERENCIA_URL,
+    token: process.env.DECA_API_TOKEN,
+  },
 };

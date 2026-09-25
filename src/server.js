@@ -39,4 +39,11 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+app.use((err, req, res, next) => {
+  if (err?.name === 'MulterError') {
+    return res.status(413).json({ ok: false, error: 'El archivo es demasiado grande.' });
+  }
+  next(err);
+});
+
 export default app;

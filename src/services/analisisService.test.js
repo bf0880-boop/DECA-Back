@@ -6,8 +6,19 @@ import analisisService from './analisisService.js';
 const analisis = {
   id: 5,
   paciente_id: 1,
-  porcentaje: 42.5,
+  porcentaje: 98.7,
+  banda: 'alta',
+  score: 0.961234,
+  modelo_sha: 'b0e2ecfc838e169c',
   fecha_hora_entrega: '2026-08-18T10:00:00.000',
+};
+
+const nuevo = {
+  pacienteId: 1,
+  porcentaje: 98.7,
+  banda: 'alta',
+  score: 0.961234,
+  modeloSha: 'b0e2ecfc838e169c',
 };
 
 afterEach(() => {
@@ -18,18 +29,18 @@ describe('crear', () => {
   it('inserta el análisis y devuelve la fila creada', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
-    const resultado = await analisisService.crear({ pacienteId: 1, porcentaje: 42.5 });
+    const resultado = await analisisService.crear(nuevo);
 
     expect(resultado).toEqual(analisis);
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO analisis');
-    expect(params).toEqual([1, 42.5]);
+    expect(params).toEqual([1, 98.7, 'alta', 0.961234, 'b0e2ecfc838e169c']);
   });
 
   it('devuelve la fecha convertida al horario argentino', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
-    await analisisService.crear({ pacienteId: 1, porcentaje: 42.5 });
+    await analisisService.crear(nuevo);
 
     expect(pool.query.mock.calls[0][0]).toContain("AT TIME ZONE 'America/Argentina/Buenos_Aires'");
   });
@@ -39,7 +50,7 @@ describe('crear', () => {
     error.code = '23503';
     vi.spyOn(pool, 'query').mockRejectedValue(error);
 
-    await expect(analisisService.crear({ pacienteId: 999, porcentaje: 10 })).rejects.toMatchObject({
+    await expect(analisisService.crear({ ...nuevo, pacienteId: 999 })).rejects.toMatchObject({
       code: '23503',
     });
   });

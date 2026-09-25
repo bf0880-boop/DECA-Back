@@ -74,6 +74,11 @@ CREATE TABLE IF NOT EXISTS analisis (
   fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS banda VARCHAR(6)
+  CHECK (banda IN ('alta', 'media', 'baja'));
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS score NUMERIC(8, 6);
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS modelo_sha VARCHAR(16);
+
 CREATE TABLE IF NOT EXISTS codigos_verificacion (
   id SERIAL PRIMARY KEY,
   usuario_tipo VARCHAR(20) NOT NULL CHECK (usuario_tipo IN ('paciente', 'medico', 'admin')),
