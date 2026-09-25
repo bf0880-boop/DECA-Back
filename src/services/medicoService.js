@@ -1,11 +1,11 @@
 import pool from '../config/db.js';
 
-async function crearOauth({ nombre, apellido, mail, oauthProvider, oauthId, dni, matricula }) {
+async function crearOauth({ nombre, apellido, mail, contrasena, oauthProvider, oauthId, dni, matricula }) {
   const result = await pool.query(
-    `INSERT INTO medicos (nombre, apellido, mail, dni, matricula, verificado, oauth_provider, oauth_id, mail_verificado)
-     VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, TRUE)
+    `INSERT INTO medicos (nombre, apellido, mail, contrasena, dni, matricula, verificado, oauth_provider, oauth_id, mail_verificado)
+     VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7, $8, TRUE)
      RETURNING id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado`,
-    [nombre, apellido, mail, dni, matricula || null, oauthProvider, oauthId]
+    [nombre, apellido, mail, contrasena, dni, matricula || null, oauthProvider, oauthId]
   );
   return result.rows[0];
 }

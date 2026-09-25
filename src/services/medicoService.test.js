@@ -16,6 +16,7 @@ describe('crearOauth', () => {
       nombre: 'Ana',
       apellido: 'Ruiz',
       mail: 'ana@test.com',
+      contrasena: '$2a$10$hash',
       oauthProvider: 'google',
       oauthId: 'google-sub-3',
       dni: '30111222',
@@ -26,7 +27,7 @@ describe('crearOauth', () => {
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO medicos');
     expect(sql).toContain('FALSE');
-    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', '30111222', 'MP-1', 'google', 'google-sub-3']);
+    expect(params).toEqual(['Ana', 'Ruiz', 'ana@test.com', '$2a$10$hash', '30111222', 'MP-1', 'google', 'google-sub-3']);
   });
 });
 

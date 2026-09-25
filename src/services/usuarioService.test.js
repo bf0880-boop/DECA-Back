@@ -7,6 +7,7 @@ const datos = {
   nombre: 'Juana',
   apellido: 'Pérez',
   mail: 'juana@test.com',
+  contrasena: '$2a$10$hash',
   oauthProvider: 'google',
   oauthId: 'google-sub-1',
   fechaNacimiento: '1990-01-01',
@@ -33,6 +34,7 @@ describe('crearOauth', () => {
       datos.nombre,
       datos.apellido,
       datos.mail,
+      datos.contrasena,
       datos.fechaNacimiento,
       datos.dni,
       datos.obraSocial,
@@ -46,7 +48,7 @@ describe('crearOauth', () => {
 
     await usuarioService.crearOauth({ ...datos, obraSocial: undefined });
 
-    expect(pool.query.mock.calls[0][1][5]).toBeNull();
+    expect(pool.query.mock.calls[0][1][6]).toBeNull();
   });
 
   it('propaga el error si falla la consulta', async () => {

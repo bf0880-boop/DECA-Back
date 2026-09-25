@@ -1,12 +1,12 @@
 import pool from '../config/db.js';
 
-async function crearOauth({ nombre, apellido, mail, oauthProvider, oauthId, fechaNacimiento, dni, obraSocial }) {
+async function crearOauth({ nombre, apellido, mail, contrasena, oauthProvider, oauthId, fechaNacimiento, dni, obraSocial }) {
   const result = await pool.query(
-    `INSERT INTO pacientes (nombre, apellido, mail, fecha_nacimiento, dni, obra_social, oauth_provider, oauth_id, mail_verificado)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+    `INSERT INTO pacientes (nombre, apellido, mail, contrasena, fecha_nacimiento, dni, obra_social, oauth_provider, oauth_id, mail_verificado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
      RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, mail_verificado,
        to_char(created_at AT TIME ZONE 'America/Argentina/Buenos_Aires', 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS created_at`,
-    [nombre, apellido, mail, fechaNacimiento, dni, obraSocial || null, oauthProvider, oauthId]
+    [nombre, apellido, mail, contrasena, fechaNacimiento, dni, obraSocial || null, oauthProvider, oauthId]
   );
   return result.rows[0];
 }
