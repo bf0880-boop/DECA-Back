@@ -4,7 +4,7 @@ import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js'
 
 const router = Router();
 
-router.use(verificarToken, permitirRoles('paciente', 'medico'));
+router.use(verificarToken, permitirRoles('paciente', 'medico', 'admin'));
 
 router.get('/', notificacionController.listar);
 router.put('/:id/leida', notificacionController.marcarLeida);

@@ -102,3 +102,45 @@ describe('PUT /usuarios/:id/medico', () => {
     expect(res.body).toEqual({ ok: true, paciente });
   });
 });
+
+describe('PUT /usuarios/perfil', () => {
+  it('devuelve 403 si el token no es de un paciente', async () => {
+    const res = await request(app)
+      .put('/usuarios/perfil')
+      .set('Authorization', `Bearer ${token('admin', 1)}`)
+      .send({ nombre: 'Juana' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('actualiza los datos del paciente sin tocar el mail', async () => {
+    const paciente = { id: 1, nombre: 'Juana', apellido: 'Pérez' };
+    const spy = vi.spyOn(usuarioService, 'actualizarPerfil').mockResolvedValue(paciente);
+
+    const res = await request(app)
+      .put('/usuarios/perfil')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ nombre: 'Juana', apellido: 'Pérez', dni: '123', fechaNacimiento: '1990-01-01', mail: 'x@y.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, paciente });
+    expect(spy).toHaveBeenCalledWith(1, {
+      nombre: 'Juana',
+      apellido: 'Pérez',
+      dni: '123',
+      fechaNacimiento: '1990-01-01',
+      obraSocial: undefined,
+    });
+  });
+
+  it('devuelve 409 si el DNI ya es de otra cuenta', async () => {
+    vi.spyOn(usuarioService, 'actualizarPerfil').mockRejectedValue(Object.assign(new Error('dup'), { code: '23505' }));
+
+    const res = await request(app)
+      .put('/usuarios/perfil')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`)
+      .send({ nombre: 'Juana', apellido: 'Pérez', dni: '123', fechaNacimiento: '1990-01-01' });
+
+    expect(res.status).toBe(409);
+  });
+});

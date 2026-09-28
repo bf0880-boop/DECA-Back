@@ -14,6 +14,31 @@ async function perfil(req, res) {
   }
 }
 
+async function actualizarPerfil(req, res) {
+  try {
+    const nombre = req.body.nombre?.trim();
+    const apellido = req.body.apellido?.trim();
+    const dni = req.body.dni?.trim();
+    const matricula = req.body.matricula?.trim();
+
+    if (!nombre || !apellido || !dni) {
+      return res.status(400).json({ ok: false, error: 'Nombre, apellido y DNI son obligatorios.' });
+    }
+
+    const medico = await medicoService.actualizarPerfil(req.usuario.id, { nombre, apellido, dni, matricula });
+    if (!medico) {
+      return res.status(404).json({ ok: false, error: 'Médico no encontrado.' });
+    }
+
+    res.json({ ok: true, medico });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ ok: false, error: 'Ya existe otra cuenta con ese DNI.' });
+    }
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
 async function listar(req, res) {
   try {
     if (req.usuario.rol === 'paciente') {
@@ -62,4 +87,4 @@ async function eliminar(req, res) {
   }
 }
 
-export default { perfil, listar, pendientes, aprobar, eliminar };
+export default { perfil, actualizarPerfil, listar, pendientes, aprobar, eliminar };

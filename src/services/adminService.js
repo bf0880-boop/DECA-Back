@@ -31,4 +31,14 @@ async function vincularOauth(id, provider, oauthId) {
   return result.rows[0] || null;
 }
 
-export default { buscarPorId, buscarPorMail, buscarPorOauth, vincularOauth };
+async function actualizarPerfil(id, { nombre, apellido }) {
+  const result = await pool.query(
+    `UPDATE admins SET nombre = $1, apellido = $2, updated_at = NOW()
+     WHERE id = $3
+     RETURNING id, nombre, apellido, mail, verificado, mail_verificado`,
+    [nombre, apellido, id]
+  );
+  return result.rows[0] || null;
+}
+
+export default { buscarPorId, buscarPorMail, buscarPorOauth, vincularOauth, actualizarPerfil };

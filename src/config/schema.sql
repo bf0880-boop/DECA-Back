@@ -113,3 +113,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_medicos_oauth ON medicos(oauth_provider, o
 CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_oauth ON admins(oauth_provider, oauth_id) WHERE oauth_id IS NOT NULL;
 
 DROP TABLE IF EXISTS codigos_verificacion;
+
+CREATE TABLE IF NOT EXISTS mensajes_admin (
+  id SERIAL PRIMARY KEY,
+  admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  usuario_tipo VARCHAR(20) NOT NULL CHECK (usuario_tipo IN ('paciente', 'medico')),
+  usuario_id INTEGER NOT NULL,
+  emisor VARCHAR(20) NOT NULL CHECK (emisor IN ('admin', 'paciente', 'medico')),
+  contenido TEXT NOT NULL,
+  fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  editado_en TIMESTAMPTZ,
+  eliminado_en TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_mensajes_admin_usuario ON mensajes_admin(usuario_tipo, usuario_id);
+CREATE INDEX IF NOT EXISTS idx_mensajes_admin_admin_id ON mensajes_admin(admin_id);

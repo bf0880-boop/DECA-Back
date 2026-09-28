@@ -72,6 +72,17 @@ async function eliminar(id) {
   return result.rowCount > 0;
 }
 
+async function actualizarPerfil(id, { nombre, apellido, dni, matricula }) {
+  const result = await pool.query(
+    `UPDATE medicos
+     SET nombre = $1, apellido = $2, dni = $3, matricula = $4, updated_at = NOW()
+     WHERE id = $5
+     RETURNING id, nombre, apellido, mail, dni, matricula, verificado, mail_verificado`,
+    [nombre, apellido, dni, matricula || null, id]
+  );
+  return result.rows[0] || null;
+}
+
 export default {
   crearOauth,
   buscarPorId,
@@ -82,4 +93,5 @@ export default {
   listarPendientes,
   aprobar,
   eliminar,
+  actualizarPerfil,
 };

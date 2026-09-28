@@ -4,7 +4,8 @@ import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js'
 
 const router = Router();
 
-router.get('/perfil', verificarToken, usuarioController.perfil);
+router.get('/perfil', verificarToken, permitirRoles('paciente'), usuarioController.perfil);
+router.put('/perfil', verificarToken, permitirRoles('paciente'), usuarioController.actualizarPerfil);
 router.get('/', verificarToken, permitirRoles('medico', 'admin'), usuarioController.listar);
 router.put('/:id/medico', verificarToken, permitirRoles('admin'), usuarioController.asignarMedico);
 

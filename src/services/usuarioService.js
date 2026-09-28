@@ -72,6 +72,17 @@ async function asignarMedico(id, medicoId) {
   return result.rows[0] || null;
 }
 
+async function actualizarPerfil(id, { nombre, apellido, fechaNacimiento, dni, obraSocial }) {
+  const result = await pool.query(
+    `UPDATE pacientes
+     SET nombre = $1, apellido = $2, fecha_nacimiento = $3, dni = $4, obra_social = $5, updated_at = NOW()
+     WHERE id = $6
+     RETURNING id, nombre, apellido, mail, fecha_nacimiento, dni, obra_social, medico_id, mail_verificado`,
+    [nombre, apellido, fechaNacimiento, dni, obraSocial || null, id]
+  );
+  return result.rows[0] || null;
+}
+
 export default {
   crearOauth,
   buscarPorMail,
@@ -81,4 +92,5 @@ export default {
   listarTodos,
   listarPorMedico,
   asignarMedico,
+  actualizarPerfil,
 };
