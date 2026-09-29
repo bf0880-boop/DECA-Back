@@ -86,7 +86,10 @@ async function realizar(req, res) {
 
 async function listarPropios(req, res) {
   try {
-    const analisis = await analisisService.listarPorPaciente(req.usuario.id);
+    const { rol, id } = req.usuario;
+    const analisis = rol === 'medico'
+      ? await analisisService.listarPorMedico(id)
+      : await analisisService.listarPorPaciente(id);
     res.json({ ok: true, analisis });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

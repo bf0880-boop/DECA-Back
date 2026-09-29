@@ -13,7 +13,7 @@ const subida = multer({
 router.use(verificarToken);
 
 router.post('/', permitirRoles('medico'), subida.single('archivo'), analisisController.realizar);
-router.get('/', permitirRoles('paciente'), analisisController.listarPropios);
+router.get('/', permitirRoles('paciente', 'medico'), analisisController.listarPropios);
 router.get('/:pacienteId', permitirRoles('medico'), analisisController.listarDePaciente);
 
 export default router;

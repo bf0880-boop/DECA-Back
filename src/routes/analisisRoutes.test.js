@@ -155,12 +155,24 @@ describe('GET /analisis', () => {
     expect(res.status).toBe(401);
   });
 
-  it('devuelve 403 si lo intenta un médico', async () => {
+  it('devuelve 403 si lo intenta un admin', async () => {
+    const res = await request(app)
+      .get('/analisis')
+      .set('Authorization', `Bearer ${token('admin', 3)}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('devuelve al médico los análisis de todos sus pacientes', async () => {
+    vi.spyOn(analisisService, 'listarPorMedico').mockResolvedValue([analisis]);
+
     const res = await request(app)
       .get('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, analisis: [analisis] });
+    expect(analisisService.listarPorMedico).toHaveBeenCalledWith(2);
   });
 
   it('devuelve los análisis del paciente logueado', async () => {

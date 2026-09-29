@@ -29,4 +29,15 @@ async function listarPorPaciente(pacienteId) {
   return result.rows;
 }
 
-export default { crear, listarPorPaciente };
+async function listarPorMedico(medicoId) {
+  const result = await pool.query(
+    `SELECT ${SELECT_FORMATEADO}
+     FROM analisis
+     WHERE paciente_id IN (SELECT id FROM pacientes WHERE medico_id = $1)
+     ORDER BY fecha_hora_entrega DESC`,
+    [medicoId]
+  );
+  return result.rows;
+}
+
+export default { crear, listarPorPaciente, listarPorMedico };
