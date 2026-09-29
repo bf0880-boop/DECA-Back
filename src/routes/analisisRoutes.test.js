@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
 import analisisService from '../services/analisisService.js';
+import almacenamientoService from '../services/almacenamientoService.js';
 import inferenciaService from '../services/inferenciaService.js';
 import notificacionService from '../services/notificacionService.js';
 import usuarioService from '../services/usuarioService.js';
@@ -45,6 +46,13 @@ function postAnalisis(auth, pacienteId = '1') {
     .attach('archivo', ecg, 'ecg.csv');
 }
 
+beforeEach(() => {
+  vi.spyOn(almacenamientoService, 'guardarECG').mockResolvedValue({
+    pathname: 'analisis/1/ecg-abc123.csv',
+    url: 'https://blob.example/analisis/1/ecg-abc123.csv',
+  });
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -77,7 +85,7 @@ describe('POST /analisis', () => {
       .post('/analisis')
       .set('Authorization', `Bearer ${token('medico', 2)}`)
       .field('pacienteId', '1')
-      .attach('archivo', Buffer.alloc(9 * 1024 * 1024), 'ecg.csv');
+      .attach('archivo', Buffer.alloc(5 * 1024 * 1024), 'ecg.csv');
 
     expect(res.status).toBe(413);
   });
@@ -129,6 +137,8 @@ describe('POST /analisis', () => {
       banda: 'alta',
       score: 0.961234,
       modeloSha: 'b0e2ecfc838e169c',
+      archivoNombre: 'ecg.csv',
+      archivoPathname: 'analisis/1/ecg-abc123.csv',
     });
     expect(notificacionService.crear).toHaveBeenCalledWith({
       usuarioTipo: 'paciente',

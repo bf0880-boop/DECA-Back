@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
 import analisisService from '../services/analisisService.js';
+import almacenamientoService, { AlmacenamientoError } from '../services/almacenamientoService.js';
 import inferenciaService, { ECGRechazado } from '../services/inferenciaService.js';
 import notificacionService from '../services/notificacionService.js';
 import usuarioService from '../services/usuarioService.js';
@@ -36,9 +37,16 @@ function reqConArchivo(body = { pacienteId: 1, frecuencia: '500' }) {
   return {
     usuario: { id: 2, rol: 'medico' },
     body,
-    file: { buffer: Buffer.from('I,II,III\n0,0,0\n'), originalname: 'ecg.csv' },
+    file: { buffer: Buffer.from('I,II,III\n0,0,0\n'), originalname: 'ecg.csv', mimetype: 'text/csv' },
   };
 }
+
+beforeEach(() => {
+  vi.spyOn(almacenamientoService, 'guardarECG').mockResolvedValue({
+    pathname: 'analisis/1/ecg-abc123.csv',
+    url: 'https://blob.example/analisis/1/ecg-abc123.csv',
+  });
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -94,6 +102,14 @@ describe('realizar', () => {
       banda: 'alta',
       score: 0.961234,
       modeloSha: 'b0e2ecfc838e169c',
+      archivoNombre: 'ecg.csv',
+      archivoPathname: 'analisis/1/ecg-abc123.csv',
+    });
+    expect(almacenamientoService.guardarECG).toHaveBeenCalledWith({
+      buffer: req.file.buffer,
+      nombreArchivo: 'ecg.csv',
+      contentType: 'text/csv',
+      pacienteId: 1,
     });
     expect(notificacionService.crear).toHaveBeenCalledWith({
       usuarioTipo: 'paciente',
@@ -162,6 +178,22 @@ describe('realizar', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ ok: false, codigo: 'inferencia_no_disponible' })
     );
+    expect(crearSpy).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 502 y no crea el análisis si no se pudo guardar el archivo', async () => {
+    const crearSpy = vi.spyOn(analisisService, 'crear');
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(inferenciaService, 'analizar').mockResolvedValue(resultadoInferencia);
+    almacenamientoService.guardarECG.mockRejectedValue(
+      new AlmacenamientoError('No se pudo guardar el archivo: timeout')
+    );
+    const res = mockRes();
+
+    await analisisController.realizar(reqConArchivo(), res);
+
+    expect(res.status).toHaveBeenCalledWith(502);
+    expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'No se pudo guardar el archivo: timeout' });
     expect(crearSpy).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,6 @@
 import analisisService from '../services/analisisService.js';
 import inferenciaService, { ECGRechazado } from '../services/inferenciaService.js';
+import almacenamientoService, { AlmacenamientoError } from '../services/almacenamientoService.js';
 import notificacionService from '../services/notificacionService.js';
 import usuarioService from '../services/usuarioService.js';
 
@@ -41,12 +42,22 @@ async function realizar(req, res) {
       derivaciones,
     });
 
+
+    const archivo = await almacenamientoService.guardarECG({
+      buffer: req.file.buffer,
+      nombreArchivo: req.file.originalname,
+      contentType: req.file.mimetype,
+      pacienteId,
+    });
+
     const analisis = await analisisService.crear({
       pacienteId,
       porcentaje: resultado.percentil,
       banda: resultado.banda,
       score: resultado.score,
       modeloSha: resultado.modelo.sha256,
+      archivoNombre: req.file.originalname,
+      archivoPathname: archivo.pathname,
     });
 
     await notificarNuevoAnalisis(pacienteId);
@@ -62,6 +73,9 @@ async function realizar(req, res) {
   } catch (err) {
     if (err instanceof ECGRechazado) {
       return res.status(err.status).json({ ok: false, error: err.message, codigo: err.codigo });
+    }
+    if (err instanceof AlmacenamientoError) {
+      return res.status(502).json({ ok: false, error: err.message });
     }
     if (err.code === '23503') {
       return res.status(404).json({ ok: false, error: 'El paciente no existe.' });

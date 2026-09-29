@@ -78,6 +78,8 @@ ALTER TABLE analisis ADD COLUMN IF NOT EXISTS banda VARCHAR(6)
   CHECK (banda IN ('alta', 'media', 'baja'));
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS score NUMERIC(8, 6);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS modelo_sha VARCHAR(16);
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(255);
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_pathname TEXT;
 
 CREATE TABLE IF NOT EXISTS codigos_verificacion (
   id SERIAL PRIMARY KEY,

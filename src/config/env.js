@@ -25,4 +25,8 @@ export default {
     url: process.env.DECA_INFERENCIA_URL,
     token: process.env.DECA_API_TOKEN,
   },
+  blob: {
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+    access: process.env.BLOB_ACCESS || 'private',
+  },
 };

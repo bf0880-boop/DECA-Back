@@ -19,6 +19,8 @@ const nuevo = {
   banda: 'alta',
   score: 0.961234,
   modeloSha: 'b0e2ecfc838e169c',
+  archivoNombre: 'ecg.csv',
+  archivoPathname: 'analisis/1/ecg-abc123.csv',
 };
 
 afterEach(() => {
@@ -34,7 +36,15 @@ describe('crear', () => {
     expect(resultado).toEqual(analisis);
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('INSERT INTO analisis');
-    expect(params).toEqual([1, 98.7, 'alta', 0.961234, 'b0e2ecfc838e169c']);
+    expect(params).toEqual([
+      1,
+      98.7,
+      'alta',
+      0.961234,
+      'b0e2ecfc838e169c',
+      'ecg.csv',
+      'analisis/1/ecg-abc123.csv',
+    ]);
   });
 
   it('devuelve la fecha convertida al horario argentino', async () => {

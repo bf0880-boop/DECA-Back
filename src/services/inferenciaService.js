@@ -11,7 +11,27 @@ class ECGRechazado extends Error {
   }
 }
 
+function bandaDe(percentil) {
+  if (percentil >= 90) return 'alta';
+  if (percentil >= 50) return 'media';
+  return 'baja';
+}
+
+function simular() {
+  const percentil = Math.round(Math.random() * 10000) / 100;
+  return {
+    percentil,
+    banda: bandaDe(percentil),
+    score: Math.round((percentil / 100) * 1e6) / 1e6,
+    interpretacion: { texto: 'Resultado simulado: todavía no hay un modelo de IA conectado.' },
+    calidad: null,
+    modelo: { sha256: 'simulado' },
+  };
+}
+
 async function analizar({ buffer, nombreArchivo, frecuencia, derivaciones }) {
+  if (!env.inferencia.url) return simular();
+
   const form = new FormData();
   form.append('archivo', new Blob([buffer]), nombreArchivo || 'ecg');
   if (frecuencia) form.append('frecuencia', String(frecuencia));

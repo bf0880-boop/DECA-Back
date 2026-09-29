@@ -5,10 +5,9 @@ import { verificarToken, permitirRoles } from '../middlewares/authMiddleware.js'
 
 const router = Router();
 
-// memoryStorage porque el archivo se reenvía y se descarta: nunca toca el disco.
 const subida = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024 },
+  limits: { fileSize: 4 * 1024 * 1024 },
 });
 
 router.use(verificarToken);
