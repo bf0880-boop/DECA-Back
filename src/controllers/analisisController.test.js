@@ -181,10 +181,12 @@ describe('realizar', () => {
     expect(crearSpy).not.toHaveBeenCalled();
   });
 
-  it('devuelve 502 y no crea el análisis si no se pudo guardar el archivo', async () => {
-    const crearSpy = vi.spyOn(analisisService, 'crear');
+  it('guarda el análisis sin archivo si Vercel Blob falla', async () => {
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(inferenciaService, 'analizar').mockResolvedValue(resultadoInferencia);
+    vi.spyOn(analisisService, 'crear').mockResolvedValue(analisis);
+    vi.spyOn(notificacionService, 'crear').mockResolvedValue({});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     almacenamientoService.guardarECG.mockRejectedValue(
       new AlmacenamientoError('No se pudo guardar el archivo: timeout')
     );
@@ -192,9 +194,10 @@ describe('realizar', () => {
 
     await analisisController.realizar(reqConArchivo(), res);
 
-    expect(res.status).toHaveBeenCalledWith(502);
-    expect(res.json).toHaveBeenCalledWith({ ok: false, error: 'No se pudo guardar el archivo: timeout' });
-    expect(crearSpy).not.toHaveBeenCalled();
+    expect(analisisService.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ archivoNombre: 'ecg.csv', archivoPathname: null })
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
   it('devuelve 404 si el paciente no existe', async () => {
