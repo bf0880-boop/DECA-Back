@@ -98,7 +98,6 @@ async function enviar(req, res) {
       return res.status(404).json({ ok: false, error: 'El destinatario no existe.' });
     }
 
-    // Las conversaciones con el admin las inicia siempre el admin.
     if (req.usuario.rol !== 'admin') {
       const existe = await mensajeAdminService.existeConversacion(
         conversacion.adminId,

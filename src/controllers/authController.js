@@ -18,7 +18,6 @@ function firmarSesion(id, mail, rol) {
   return jwt.sign({ id, mail, rol }, env.jwt.secret, { expiresIn: env.jwt.expiresIn });
 }
 
-// Las búsquedas por mail/oauth hacen SELECT *: el hash nunca tiene que llegar al front.
 function sinContrasena(cuenta) {
   const { contrasena, ...resto } = cuenta;
   return resto;

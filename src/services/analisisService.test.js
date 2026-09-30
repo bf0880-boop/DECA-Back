@@ -79,11 +79,55 @@ describe('listarPorPaciente', () => {
     expect(params).toEqual([1]);
   });
 
+  it('con soloEnviados filtra los que el médico todavía no envió', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
+
+    await analisisService.listarPorPaciente(1, { soloEnviados: true });
+
+    expect(pool.query.mock.calls[0][0]).toContain('AND enviado');
+  });
+
+  it('sin opciones devuelve también los no enviados', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
+
+    await analisisService.listarPorPaciente(1);
+
+    expect(pool.query.mock.calls[0][0]).not.toContain('AND enviado');
+  });
+
   it('devuelve una lista vacía si el paciente no tiene análisis', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
 
     const resultado = await analisisService.listarPorPaciente(1);
 
     expect(resultado).toEqual([]);
+  });
+});
+
+describe('marcarEnviado', () => {
+  it('marca el análisis como enviado y devuelve la fila', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ ...analisis, enviado: true }] });
+
+    const resultado = await analisisService.marcarEnviado(5);
+
+    expect(resultado).toEqual({ ...analisis, enviado: true });
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('SET enviado = TRUE');
+    expect(sql).toContain('NOT enviado');
+    expect(params).toEqual([5]);
+  });
+
+  it('devuelve null si ya estaba enviado', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    expect(await analisisService.marcarEnviado(5)).toBeNull();
+  });
+});
+
+describe('buscarPorId', () => {
+  it('devuelve null si el análisis no existe', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    expect(await analisisService.buscarPorId(999)).toBeNull();
   });
 });

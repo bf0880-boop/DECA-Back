@@ -21,7 +21,6 @@ async function notificarNuevoAnalisis(pacienteId) {
   }
 }
 
-// Si Blob falla, el análisis se guarda igual sin archivo: el error queda en los logs de Vercel.
 async function guardarArchivo(file, pacienteId) {
   try {
     return await almacenamientoService.guardarECG({
@@ -69,10 +68,6 @@ async function realizar(req, res) {
       archivoPathname: archivo?.pathname ?? null,
     });
 
-    await notificarNuevoAnalisis(pacienteId);
-
-    // `interpretacion` y `calidad` no se guardan: son para mostrar en el momento.
-    // En los GET posteriores sólo vuelve lo que está en la base.
     res.status(201).json({
       ok: true,
       analisis,
@@ -95,7 +90,7 @@ async function listarPropios(req, res) {
     const { rol, id } = req.usuario;
     const analisis = rol === 'medico'
       ? await analisisService.listarPorMedico(id)
-      : await analisisService.listarPorPaciente(id);
+      : await analisisService.listarPorPaciente(id, { soloEnviados: true });
     res.json({ ok: true, analisis });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -115,4 +110,26 @@ async function listarDePaciente(req, res) {
   }
 }
 
-export default { realizar, listarPropios, listarDePaciente };
+async function enviar(req, res) {
+  try {
+    const existente = await analisisService.buscarPorId(req.params.id);
+    if (!existente) {
+      return res.status(404).json({ ok: false, error: 'El análisis no existe.' });
+    }
+    if (!(await estaAsignado(existente.paciente_id, req.usuario.id))) {
+      return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
+    }
+
+    const analisis = await analisisService.marcarEnviado(req.params.id);
+    if (!analisis) {
+      return res.status(409).json({ ok: false, error: 'El análisis ya fue enviado al paciente.' });
+    }
+
+    await notificarNuevoAnalisis(analisis.paciente_id);
+    res.json({ ok: true, analisis });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+export default { realizar, listarPropios, listarDePaciente, enviar };

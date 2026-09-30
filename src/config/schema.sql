@@ -80,6 +80,8 @@ ALTER TABLE analisis ADD COLUMN IF NOT EXISTS score NUMERIC(8, 6);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS modelo_sha VARCHAR(16);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(255);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_pathname TEXT;
+-- El default es TRUE para que los análisis viejos sigan visibles; los nuevos se crean sin enviar.
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS enviado BOOLEAN NOT NULL DEFAULT TRUE;
 
 CREATE TABLE IF NOT EXISTS codigos_verificacion (
   id SERIAL PRIMARY KEY,

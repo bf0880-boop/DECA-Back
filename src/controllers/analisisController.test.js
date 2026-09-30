@@ -80,7 +80,7 @@ describe('realizar', () => {
     expect(crearSpy).not.toHaveBeenCalled();
   });
 
-  it('crea el análisis, notifica al paciente y devuelve 201', async () => {
+  it('crea el análisis sin enviarlo ni notificar al paciente y devuelve 201', async () => {
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(inferenciaService, 'analizar').mockResolvedValue(resultadoInferencia);
     vi.spyOn(analisisService, 'crear').mockResolvedValue(analisis);
@@ -111,11 +111,7 @@ describe('realizar', () => {
       contentType: 'text/csv',
       pacienteId: 1,
     });
-    expect(notificacionService.crear).toHaveBeenCalledWith({
-      usuarioTipo: 'paciente',
-      usuarioId: 1,
-      contenido: 'Recibiste un nuevo análisis.',
-    });
+    expect(notificacionService.crear).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
       ok: true,
@@ -237,7 +233,7 @@ describe('listarPropios', () => {
 
     await analisisController.listarPropios(req, res);
 
-    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1);
+    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1, { soloEnviados: true });
     expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: [analisis] });
   });
 
@@ -284,6 +280,72 @@ describe('listarDePaciente', () => {
     const res = mockRes();
 
     await analisisController.listarDePaciente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('enviar', () => {
+  const req = { usuario: { id: 2, rol: 'medico' }, params: { id: '5' } };
+
+  it('devuelve 404 si el análisis no existe', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue(null);
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    const marcarSpy = vi.spyOn(analisisService, 'marcarEnviado');
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(marcarSpy).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 409 si ya estaba enviado y no vuelve a notificar', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: true });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(null);
+    const notificarSpy = vi.spyOn(notificacionService, 'crear');
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(notificarSpy).not.toHaveBeenCalled();
+  });
+
+  it('marca el análisis como enviado y notifica al paciente', async () => {
+    const enviado = { ...analisis, enviado: true };
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(enviado);
+    vi.spyOn(notificacionService, 'crear').mockResolvedValue({});
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
+
+    expect(analisisService.marcarEnviado).toHaveBeenCalledWith('5');
+    expect(notificacionService.crear).toHaveBeenCalledWith({
+      usuarioTipo: 'paciente',
+      usuarioId: 1,
+      contenido: 'Recibiste un nuevo análisis.',
+    });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: enviado });
+  });
+
+  it('devuelve 500 ante un error inesperado', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockRejectedValue(new Error('fallo de conexión'));
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
   });

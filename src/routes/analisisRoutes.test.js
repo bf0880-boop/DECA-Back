@@ -110,7 +110,7 @@ describe('POST /analisis', () => {
     expect(res.status).toBe(404);
   });
 
-  it('el médico realiza el análisis, se notifica al paciente y devuelve 201', async () => {
+  it('el médico realiza el análisis sin notificar al paciente y devuelve 201', async () => {
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(inferenciaService, 'analizar').mockResolvedValue(resultadoInferencia);
     vi.spyOn(analisisService, 'crear').mockResolvedValue(analisis);
@@ -140,11 +140,7 @@ describe('POST /analisis', () => {
       archivoNombre: 'ecg.csv',
       archivoPathname: 'analisis/1/ecg-abc123.csv',
     });
-    expect(notificacionService.crear).toHaveBeenCalledWith({
-      usuarioTipo: 'paciente',
-      usuarioId: '1',
-      contenido: 'Recibiste un nuevo análisis.',
-    });
+    expect(notificacionService.crear).not.toHaveBeenCalled();
   });
 });
 
@@ -184,7 +180,7 @@ describe('GET /analisis', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, analisis: [analisis] });
-    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1);
+    expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1, { soloEnviados: true });
   });
 });
 
@@ -224,5 +220,41 @@ describe('GET /analisis/:pacienteId', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, analisis: [analisis] });
     expect(analisisService.listarPorPaciente).toHaveBeenCalledWith('1');
+  });
+});
+
+describe('PUT /analisis/:id/enviar', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).put('/analisis/5/enviar');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve 403 si lo intenta un paciente', async () => {
+    const res = await request(app)
+      .put('/analisis/5/enviar')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('el médico envía el análisis y se notifica al paciente', async () => {
+    const enviado = { ...analisis, enviado: true };
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(enviado);
+    vi.spyOn(notificacionService, 'crear').mockResolvedValue({});
+
+    const res = await request(app)
+      .put('/analisis/5/enviar')
+      .set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, analisis: enviado });
+    expect(notificacionService.crear).toHaveBeenCalledWith({
+      usuarioTipo: 'paciente',
+      usuarioId: 1,
+      contenido: 'Recibiste un nuevo análisis.',
+    });
   });
 });
