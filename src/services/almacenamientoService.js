@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import env from '../config/env.js';
 
 class AlmacenamientoError extends Error {}
@@ -25,5 +25,13 @@ async function guardarECG({ buffer, nombreArchivo, contentType, pacienteId }) {
   }
 }
 
+async function eliminarECG(pathname) {
+  try {
+    await del(pathname);
+  } catch (err) {
+    throw new AlmacenamientoError(`No se pudo borrar el archivo: ${err.message}`);
+  }
+}
+
 export { AlmacenamientoError };
-export default { guardarECG };
+export default { guardarECG, eliminarECG };

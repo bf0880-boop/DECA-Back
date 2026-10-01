@@ -15,6 +15,8 @@ router.use(verificarToken);
 router.post('/', permitirRoles('medico'), subida.single('archivo'), analisisController.realizar);
 router.get('/', permitirRoles('paciente', 'medico'), analisisController.listarPropios);
 router.get('/:pacienteId', permitirRoles('medico'), analisisController.listarDePaciente);
+router.put('/:id/aprobar', permitirRoles('medico'), analisisController.aprobar);
+router.delete('/:id', permitirRoles('medico'), analisisController.rechazar);
 router.put('/:id/enviar', permitirRoles('medico'), analisisController.enviar);
 
 export default router;

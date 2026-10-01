@@ -5,13 +5,13 @@ function enHorarioArgentino(columna) {
 }
 
 const SELECT_FORMATEADO =
-  `id, paciente_id, porcentaje, banda, score, modelo_sha, archivo_nombre, enviado,
+  `id, paciente_id, porcentaje, banda, score, modelo_sha, archivo_nombre, aprobado, enviado,
    ${enHorarioArgentino('fecha_hora_entrega')}`;
 
 async function crear({ pacienteId, porcentaje, banda, score, modeloSha, archivoNombre, archivoPathname }) {
   const result = await pool.query(
-    `INSERT INTO analisis (paciente_id, porcentaje, banda, score, modelo_sha, archivo_nombre, archivo_pathname, enviado)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)
+    `INSERT INTO analisis (paciente_id, porcentaje, banda, score, modelo_sha, archivo_nombre, archivo_pathname, aprobado, enviado)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, FALSE)
      RETURNING ${SELECT_FORMATEADO}`,
     [pacienteId, porcentaje, banda, score, modeloSha, archivoNombre, archivoPathname]
   );
@@ -34,10 +34,30 @@ async function buscarPorId(id) {
   return result.rows[0] || null;
 }
 
+async function marcarAprobado(id) {
+  const result = await pool.query(
+    `UPDATE analisis SET aprobado = TRUE
+     WHERE id = $1 AND NOT aprobado
+     RETURNING ${SELECT_FORMATEADO}`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+async function eliminarNoAprobado(id) {
+  const result = await pool.query(
+    `DELETE FROM analisis
+     WHERE id = $1 AND NOT aprobado
+     RETURNING id, paciente_id, archivo_pathname`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 async function marcarEnviado(id) {
   const result = await pool.query(
     `UPDATE analisis SET enviado = TRUE
-     WHERE id = $1 AND NOT enviado
+     WHERE id = $1 AND aprobado AND NOT enviado
      RETURNING ${SELECT_FORMATEADO}`,
     [id]
   );
@@ -55,4 +75,12 @@ async function listarPorMedico(medicoId) {
   return result.rows;
 }
 
-export default { crear, listarPorPaciente, listarPorMedico, buscarPorId, marcarEnviado };
+export default {
+  crear,
+  listarPorPaciente,
+  listarPorMedico,
+  buscarPorId,
+  marcarAprobado,
+  eliminarNoAprobado,
+  marcarEnviado,
+};

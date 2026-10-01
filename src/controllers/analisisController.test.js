@@ -285,6 +285,157 @@ describe('listarDePaciente', () => {
   });
 });
 
+describe('aprobar', () => {
+  const req = { usuario: { id: 2, rol: 'medico' }, params: { id: '5' } };
+
+  it('devuelve 404 si el análisis no existe', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue(null);
+    const res = mockRes();
+
+    await analisisController.aprobar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    const aprobarSpy = vi.spyOn(analisisService, 'marcarAprobado');
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const res = mockRes();
+
+    await analisisController.aprobar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(aprobarSpy).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 409 si ya estaba aprobado', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: true });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarAprobado').mockResolvedValue(null);
+    const res = mockRes();
+
+    await analisisController.aprobar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
+
+  it('aprueba el análisis sin enviarlo ni notificar al paciente', async () => {
+    const aprobado = { ...analisis, aprobado: true, enviado: false };
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarAprobado').mockResolvedValue(aprobado);
+    const enviarSpy = vi.spyOn(analisisService, 'marcarEnviado');
+    const notificarSpy = vi.spyOn(notificacionService, 'crear');
+    const res = mockRes();
+
+    await analisisController.aprobar(req, res);
+
+    expect(analisisService.marcarAprobado).toHaveBeenCalledWith('5');
+    expect(enviarSpy).not.toHaveBeenCalled();
+    expect(notificarSpy).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: aprobado });
+  });
+
+  it('devuelve 500 ante un error inesperado', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockRejectedValue(new Error('fallo de conexión'));
+    const res = mockRes();
+
+    await analisisController.aprobar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('rechazar', () => {
+  const req = { usuario: { id: 2, rol: 'medico' }, params: { id: '5' } };
+  const eliminado = { id: 5, paciente_id: 1, archivo_pathname: 'analisis/1/ecg-abc123.csv' };
+
+  beforeEach(() => {
+    vi.spyOn(almacenamientoService, 'eliminarECG').mockResolvedValue();
+  });
+
+  it('devuelve 404 si el análisis no existe', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue(null);
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('devuelve 403 si el paciente no está asignado al médico', async () => {
+    const eliminarSpy = vi.spyOn(analisisService, 'eliminarNoAprobado');
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 5 });
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(eliminarSpy).not.toHaveBeenCalled();
+  });
+
+  it('devuelve 409 si el análisis ya fue aprobado y no borra el archivo', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: true });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'eliminarNoAprobado').mockResolvedValue(null);
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(almacenamientoService.eliminarECG).not.toHaveBeenCalled();
+  });
+
+  it('elimina el análisis y su archivo', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'eliminarNoAprobado').mockResolvedValue(eliminado);
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(analisisService.eliminarNoAprobado).toHaveBeenCalledWith('5');
+    expect(almacenamientoService.eliminarECG).toHaveBeenCalledWith('analisis/1/ecg-abc123.csv');
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+  });
+
+  it('elimina el análisis aunque no se pueda borrar el archivo', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'eliminarNoAprobado').mockResolvedValue(eliminado);
+    almacenamientoService.eliminarECG.mockRejectedValue(new AlmacenamientoError('timeout'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+  });
+
+  it('no intenta borrar el archivo si el análisis no tenía', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'eliminarNoAprobado').mockResolvedValue({ ...eliminado, archivo_pathname: null });
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(almacenamientoService.eliminarECG).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ ok: true });
+  });
+
+  it('devuelve 500 ante un error inesperado', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockRejectedValue(new Error('fallo de conexión'));
+    const res = mockRes();
+
+    await analisisController.rechazar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
 describe('enviar', () => {
   const req = { usuario: { id: 2, rol: 'medico' }, params: { id: '5' } };
 
@@ -309,8 +460,22 @@ describe('enviar', () => {
     expect(marcarSpy).not.toHaveBeenCalled();
   });
 
+  it('devuelve 409 si el médico todavía no aprobó el resultado', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    const marcarSpy = vi.spyOn(analisisService, 'marcarEnviado');
+    const notificarSpy = vi.spyOn(notificacionService, 'crear');
+    const res = mockRes();
+
+    await analisisController.enviar(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(marcarSpy).not.toHaveBeenCalled();
+    expect(notificarSpy).not.toHaveBeenCalled();
+  });
+
   it('devuelve 409 si ya estaba enviado y no vuelve a notificar', async () => {
-    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: true });
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: true, enviado: true });
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(null);
     const notificarSpy = vi.spyOn(notificacionService, 'crear');
@@ -324,7 +489,7 @@ describe('enviar', () => {
 
   it('marca el análisis como enviado y notifica al paciente', async () => {
     const enviado = { ...analisis, enviado: true };
-    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: false });
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: true, enviado: false });
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(enviado);
     vi.spyOn(notificacionService, 'crear').mockResolvedValue({});

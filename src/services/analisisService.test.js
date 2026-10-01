@@ -47,6 +47,16 @@ describe('crear', () => {
     ]);
   });
 
+  it('lo crea sin aprobar y sin enviar', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
+
+    await analisisService.crear(nuevo);
+
+    const sql = pool.query.mock.calls[0][0];
+    expect(sql).toContain('aprobado, enviado)');
+    expect(sql).toContain('FALSE, FALSE)');
+  });
+
   it('devuelve la fecha convertida al horario argentino', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [analisis] });
 
@@ -104,6 +114,48 @@ describe('listarPorPaciente', () => {
   });
 });
 
+describe('marcarAprobado', () => {
+  it('marca el análisis como aprobado y devuelve la fila', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ ...analisis, aprobado: true }] });
+
+    const resultado = await analisisService.marcarAprobado(5);
+
+    expect(resultado).toEqual({ ...analisis, aprobado: true });
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('SET aprobado = TRUE');
+    expect(sql).toContain('NOT aprobado');
+    expect(params).toEqual([5]);
+  });
+
+  it('devuelve null si ya estaba aprobado', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    expect(await analisisService.marcarAprobado(5)).toBeNull();
+  });
+});
+
+describe('eliminarNoAprobado', () => {
+  it('borra solo si no está aprobado y devuelve el archivo para limpiarlo', async () => {
+    const fila = { id: 5, paciente_id: 1, archivo_pathname: 'analisis/1/ecg-abc123.csv' };
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [fila] });
+
+    const resultado = await analisisService.eliminarNoAprobado(5);
+
+    expect(resultado).toEqual(fila);
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('DELETE FROM analisis');
+    expect(sql).toContain('NOT aprobado');
+    expect(sql).toContain('archivo_pathname');
+    expect(params).toEqual([5]);
+  });
+
+  it('devuelve null si ya estaba aprobado o no existe', async () => {
+    vi.spyOn(pool, 'query').mockResolvedValue({ rows: [] });
+
+    expect(await analisisService.eliminarNoAprobado(5)).toBeNull();
+  });
+});
+
 describe('marcarEnviado', () => {
   it('marca el análisis como enviado y devuelve la fila', async () => {
     vi.spyOn(pool, 'query').mockResolvedValue({ rows: [{ ...analisis, enviado: true }] });
@@ -113,6 +165,7 @@ describe('marcarEnviado', () => {
     expect(resultado).toEqual({ ...analisis, enviado: true });
     const [sql, params] = pool.query.mock.calls[0];
     expect(sql).toContain('SET enviado = TRUE');
+    expect(sql).toContain('AND aprobado');
     expect(sql).toContain('NOT enviado');
     expect(params).toEqual([5]);
   });

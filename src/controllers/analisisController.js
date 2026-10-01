@@ -35,6 +35,28 @@ async function guardarArchivo(file, pacienteId) {
   }
 }
 
+async function borrarArchivo(pathname) {
+  if (!pathname) return;
+  try {
+    await almacenamientoService.eliminarECG(pathname);
+  } catch (err) {
+    console.error('No se pudo borrar el ECG de Vercel Blob:', err.message);
+  }
+}
+
+async function analisisDelMedico(req, res) {
+  const analisis = await analisisService.buscarPorId(req.params.id);
+  if (!analisis) {
+    res.status(404).json({ ok: false, error: 'El análisis no existe.' });
+    return null;
+  }
+  if (!(await estaAsignado(analisis.paciente_id, req.usuario.id))) {
+    res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
+    return null;
+  }
+  return analisis;
+}
+
 async function realizar(req, res) {
   try {
     const { pacienteId, frecuencia, derivaciones } = req.body;
@@ -110,14 +132,43 @@ async function listarDePaciente(req, res) {
   }
 }
 
+async function aprobar(req, res) {
+  try {
+    if (!(await analisisDelMedico(req, res))) return;
+
+    const analisis = await analisisService.marcarAprobado(req.params.id);
+    if (!analisis) {
+      return res.status(409).json({ ok: false, error: 'El análisis ya fue aprobado.' });
+    }
+
+    res.json({ ok: true, analisis });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
+async function rechazar(req, res) {
+  try {
+    if (!(await analisisDelMedico(req, res))) return;
+
+    const eliminado = await analisisService.eliminarNoAprobado(req.params.id);
+    if (!eliminado) {
+      return res.status(409).json({ ok: false, error: 'No se puede rechazar un análisis que ya aprobaste.' });
+    }
+
+    await borrarArchivo(eliminado.archivo_pathname);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+
 async function enviar(req, res) {
   try {
-    const existente = await analisisService.buscarPorId(req.params.id);
-    if (!existente) {
-      return res.status(404).json({ ok: false, error: 'El análisis no existe.' });
-    }
-    if (!(await estaAsignado(existente.paciente_id, req.usuario.id))) {
-      return res.status(403).json({ ok: false, error: 'Ese paciente no está asignado a tu cuenta.' });
+    const existente = await analisisDelMedico(req, res);
+    if (!existente) return;
+    if (!existente.aprobado) {
+      return res.status(409).json({ ok: false, error: 'Primero tenés que aprobar el resultado del análisis.' });
     }
 
     const analisis = await analisisService.marcarEnviado(req.params.id);
@@ -132,4 +183,4 @@ async function enviar(req, res) {
   }
 }
 
-export default { realizar, listarPropios, listarDePaciente, enviar };
+export default { realizar, listarPropios, listarDePaciente, aprobar, rechazar, enviar };

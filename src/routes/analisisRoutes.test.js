@@ -223,6 +223,73 @@ describe('GET /analisis/:pacienteId', () => {
   });
 });
 
+describe('PUT /analisis/:id/aprobar', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).put('/analisis/5/aprobar');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve 403 si lo intenta un paciente', async () => {
+    const res = await request(app)
+      .put('/analisis/5/aprobar')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('el médico aprueba el resultado sin notificar al paciente', async () => {
+    const aprobado = { ...analisis, aprobado: true, enviado: false };
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'marcarAprobado').mockResolvedValue(aprobado);
+    vi.spyOn(notificacionService, 'crear').mockResolvedValue({});
+
+    const res = await request(app)
+      .put('/analisis/5/aprobar')
+      .set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, analisis: aprobado });
+    expect(notificacionService.crear).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /analisis/:id', () => {
+  it('devuelve 401 sin token', async () => {
+    const res = await request(app).delete('/analisis/5');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('devuelve 403 si lo intenta un paciente', async () => {
+    const res = await request(app)
+      .delete('/analisis/5')
+      .set('Authorization', `Bearer ${token('paciente', 1)}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('el médico rechaza el resultado y se elimina el análisis', async () => {
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: false, enviado: false });
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(analisisService, 'eliminarNoAprobado').mockResolvedValue({
+      id: 5,
+      paciente_id: 1,
+      archivo_pathname: 'analisis/1/ecg-abc123.csv',
+    });
+    vi.spyOn(almacenamientoService, 'eliminarECG').mockResolvedValue();
+
+    const res = await request(app)
+      .delete('/analisis/5')
+      .set('Authorization', `Bearer ${token('medico', 2)}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(almacenamientoService.eliminarECG).toHaveBeenCalledWith('analisis/1/ecg-abc123.csv');
+  });
+});
+
 describe('PUT /analisis/:id/enviar', () => {
   it('devuelve 401 sin token', async () => {
     const res = await request(app).put('/analisis/5/enviar');
@@ -240,7 +307,7 @@ describe('PUT /analisis/:id/enviar', () => {
 
   it('el médico envía el análisis y se notifica al paciente', async () => {
     const enviado = { ...analisis, enviado: true };
-    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, enviado: false });
+    vi.spyOn(analisisService, 'buscarPorId').mockResolvedValue({ ...analisis, aprobado: true, enviado: false });
     vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
     vi.spyOn(analisisService, 'marcarEnviado').mockResolvedValue(enviado);
     vi.spyOn(notificacionService, 'crear').mockResolvedValue({});

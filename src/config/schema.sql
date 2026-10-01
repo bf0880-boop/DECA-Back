@@ -82,6 +82,7 @@ ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(255);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_pathname TEXT;
 -- El default es TRUE para que los análisis viejos sigan visibles; los nuevos se crean sin enviar.
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS enviado BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS aprobado BOOLEAN NOT NULL DEFAULT TRUE;
 
 CREATE TABLE IF NOT EXISTS codigos_verificacion (
   id SERIAL PRIMARY KEY,
