@@ -35,6 +35,8 @@ const resultadoInferencia = {
   modelo: { sha256: 'b0e2ecfc838e169c' },
 };
 
+const TEXTO_ALTA = expect.stringContaining('Prioridad alta');
+
 const ecg = Buffer.from('I,II,III\n0,0,0\n');
 
 function postAnalisis(auth, pacienteId = '1') {
@@ -121,7 +123,7 @@ describe('POST /analisis', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({
       ok: true,
-      analisis,
+      analisis: { ...analisis, texto_banda: TEXTO_ALTA },
       interpretacion: resultadoInferencia.interpretacion,
       calidad: resultadoInferencia.calidad,
     });
@@ -141,6 +143,24 @@ describe('POST /analisis', () => {
       archivoPathname: 'analisis/1/ecg-abc123.csv',
     });
     expect(notificacionService.crear).not.toHaveBeenCalled();
+  });
+
+  it('el médico realiza un análisis con banda no_alta y devuelve 201', async () => {
+    const analisisNoAlta = { ...analisis, porcentaje: 97.1, banda: 'no_alta', score: 0.912345 };
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(inferenciaService, 'analizar').mockResolvedValue({
+      ...resultadoInferencia, percentil: 97.1, banda: 'no_alta', score: 0.912345,
+    });
+    vi.spyOn(analisisService, 'crear').mockResolvedValue(analisisNoAlta);
+
+    const res = await postAnalisis(token('medico', 2));
+
+    expect(res.status).toBe(201);
+    expect(res.body.analisis).toEqual({
+      ...analisisNoAlta,
+      texto_banda: expect.stringContaining('NO descarta Chagas'),
+    });
+    expect(analisisService.crear).toHaveBeenCalledWith(expect.objectContaining({ banda: 'no_alta' }));
   });
 });
 
@@ -167,7 +187,7 @@ describe('GET /analisis', () => {
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, analisis: [analisis] });
+    expect(res.body).toEqual({ ok: true, analisis: [{ ...analisis, texto_banda: TEXTO_ALTA }] });
     expect(analisisService.listarPorMedico).toHaveBeenCalledWith(2);
   });
 
@@ -179,7 +199,7 @@ describe('GET /analisis', () => {
       .set('Authorization', `Bearer ${token('paciente', 1)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, analisis: [analisis] });
+    expect(res.body).toEqual({ ok: true, analisis: [{ ...analisis, texto_banda: TEXTO_ALTA }] });
     expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1, { soloEnviados: true });
   });
 });
@@ -218,7 +238,7 @@ describe('GET /analisis/:pacienteId', () => {
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, analisis: [analisis] });
+    expect(res.body).toEqual({ ok: true, analisis: [{ ...analisis, texto_banda: TEXTO_ALTA }] });
     expect(analisisService.listarPorPaciente).toHaveBeenCalledWith('1');
   });
 });
@@ -250,7 +270,7 @@ describe('PUT /analisis/:id/aprobar', () => {
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, analisis: aprobado });
+    expect(res.body).toEqual({ ok: true, analisis: { ...aprobado, texto_banda: TEXTO_ALTA } });
     expect(notificacionService.crear).not.toHaveBeenCalled();
   });
 });
@@ -317,7 +337,7 @@ describe('PUT /analisis/:id/enviar', () => {
       .set('Authorization', `Bearer ${token('medico', 2)}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, analisis: enviado });
+    expect(res.body).toEqual({ ok: true, analisis: { ...enviado, texto_banda: TEXTO_ALTA } });
     expect(notificacionService.crear).toHaveBeenCalledWith({
       usuarioTipo: 'paciente',
       usuarioId: 1,

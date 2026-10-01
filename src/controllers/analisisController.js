@@ -4,6 +4,18 @@ import almacenamientoService from '../services/almacenamientoService.js';
 import notificacionService from '../services/notificacionService.js';
 import usuarioService from '../services/usuarioService.js';
 
+const TEXTO_BANDA = {
+  alta: 'Prioridad alta. De cada 100 personas priorizadas así, cerca de 30 resultaron '
+      + 'positivas en la validación del modelo.',
+  no_alta: 'Sin prioridad por ECG. Esto NO descarta Chagas: cerca de 4 de cada 5 casos '
+      + 'reales caen acá. Con antecedentes epidemiológicos (zona endémica, madre con '
+      + 'Chagas, transfusiones) corresponde ofrecer la serología igual.',
+};
+
+function conTextoBanda(analisis) {
+  return { ...analisis, texto_banda: TEXTO_BANDA[analisis.banda] ?? null };
+}
+
 async function estaAsignado(pacienteId, medicoId) {
   const paciente = await usuarioService.buscarPorId(pacienteId);
   return !!paciente && String(paciente.medico_id) === String(medicoId);
@@ -92,7 +104,7 @@ async function realizar(req, res) {
 
     res.status(201).json({
       ok: true,
-      analisis,
+      analisis: conTextoBanda(analisis),
       interpretacion: resultado.interpretacion,
       calidad: resultado.calidad,
     });
@@ -113,7 +125,7 @@ async function listarPropios(req, res) {
     const analisis = rol === 'medico'
       ? await analisisService.listarPorMedico(id)
       : await analisisService.listarPorPaciente(id, { soloEnviados: true });
-    res.json({ ok: true, analisis });
+    res.json({ ok: true, analisis: analisis.map(conTextoBanda) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -126,7 +138,7 @@ async function listarDePaciente(req, res) {
     }
 
     const analisis = await analisisService.listarPorPaciente(req.params.pacienteId);
-    res.json({ ok: true, analisis });
+    res.json({ ok: true, analisis: analisis.map(conTextoBanda) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -141,7 +153,7 @@ async function aprobar(req, res) {
       return res.status(409).json({ ok: false, error: 'El análisis ya fue aprobado.' });
     }
 
-    res.json({ ok: true, analisis });
+    res.json({ ok: true, analisis: conTextoBanda(analisis) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -177,7 +189,7 @@ async function enviar(req, res) {
     }
 
     await notificarNuevoAnalisis(analisis.paciente_id);
-    res.json({ ok: true, analisis });
+    res.json({ ok: true, analisis: conTextoBanda(analisis) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

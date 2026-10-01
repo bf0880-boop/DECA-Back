@@ -74,13 +74,17 @@ CREATE TABLE IF NOT EXISTS analisis (
   fecha_hora_entrega TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE analisis ADD COLUMN IF NOT EXISTS banda VARCHAR(6)
-  CHECK (banda IN ('alta', 'media', 'baja'));
+ALTER TABLE analisis ADD COLUMN IF NOT EXISTS banda VARCHAR(7)
+  CHECK (banda IN ('alta', 'no_alta'));
+ALTER TABLE analisis DROP CONSTRAINT IF EXISTS analisis_banda_check;
+ALTER TABLE analisis ALTER COLUMN banda TYPE VARCHAR(7);
+UPDATE analisis SET banda = 'no_alta' WHERE banda IN ('media', 'baja');
+ALTER TABLE analisis ADD CONSTRAINT analisis_banda_check
+  CHECK (banda IN ('alta', 'no_alta'));
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS score NUMERIC(8, 6);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS modelo_sha VARCHAR(16);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_nombre VARCHAR(255);
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS archivo_pathname TEXT;
--- El default es TRUE para que los análisis viejos sigan visibles; los nuevos se crean sin enviar.
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS enviado BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE analisis ADD COLUMN IF NOT EXISTS aprobado BOOLEAN NOT NULL DEFAULT TRUE;
 

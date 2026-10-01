@@ -33,6 +33,11 @@ const resultadoInferencia = {
   modelo: { sha256: 'b0e2ecfc838e169c' },
 };
 
+const TEXTO_ALTA = expect.stringContaining('Prioridad alta');
+
+const analisisNoAlta = { ...analisis, porcentaje: 97.1, banda: 'no_alta', score: 0.912345 };
+const resultadoNoAlta = { ...resultadoInferencia, percentil: 97.1, banda: 'no_alta', score: 0.912345 };
+
 function reqConArchivo(body = { pacienteId: 1, frecuencia: '500' }) {
   return {
     usuario: { id: 2, rol: 'medico' },
@@ -115,10 +120,31 @@ describe('realizar', () => {
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
       ok: true,
-      analisis,
+      analisis: { ...analisis, texto_banda: TEXTO_ALTA },
       interpretacion: resultadoInferencia.interpretacion,
       calidad: resultadoInferencia.calidad,
     });
+  });
+
+  it('crea el análisis con banda no_alta (el caso más común) y devuelve 201', async () => {
+    vi.spyOn(usuarioService, 'buscarPorId').mockResolvedValue({ id: 1, medico_id: 2 });
+    vi.spyOn(inferenciaService, 'analizar').mockResolvedValue(resultadoNoAlta);
+    vi.spyOn(analisisService, 'crear').mockResolvedValue(analisisNoAlta);
+    const req = reqConArchivo();
+    const res = mockRes();
+
+    await analisisController.realizar(req, res);
+
+    expect(analisisService.crear).toHaveBeenCalledWith(expect.objectContaining({
+      porcentaje: 97.1,
+      banda: 'no_alta',
+      score: 0.912345,
+    }));
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      ok: true,
+      analisis: { ...analisisNoAlta, texto_banda: expect.stringContaining('NO descarta Chagas') },
+    }));
   });
 
   it('no falla la creación aunque la notificación no se pueda crear', async () => {
@@ -133,7 +159,7 @@ describe('realizar', () => {
     await analisisController.realizar(req, res);
 
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true, analisis }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ ok: true, analisis: { ...analisis, texto_banda: TEXTO_ALTA } }));
   });
 
   it('devuelve 422 si el servicio de inferencia rechaza el ECG', async () => {
@@ -234,7 +260,22 @@ describe('listarPropios', () => {
     await analisisController.listarPropios(req, res);
 
     expect(analisisService.listarPorPaciente).toHaveBeenCalledWith(1, { soloEnviados: true });
-    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: [analisis] });
+    expect(res.json).toHaveBeenCalledWith({
+      ok: true,
+      analisis: [{ ...analisis, texto_banda: TEXTO_ALTA }],
+    });
+  });
+
+  it('agrega la aclaración de que no_alta no descarta Chagas', async () => {
+    vi.spyOn(analisisService, 'listarPorPaciente').mockResolvedValue([analisisNoAlta]);
+    const req = { usuario: { id: 1, rol: 'paciente' } };
+    const res = mockRes();
+
+    await analisisController.listarPropios(req, res);
+
+    const [{ analisis: [devuelto] }] = res.json.mock.calls[0];
+    expect(devuelto.banda).toBe('no_alta');
+    expect(devuelto.texto_banda).toContain('NO descarta Chagas');
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
@@ -270,7 +311,10 @@ describe('listarDePaciente', () => {
     await analisisController.listarDePaciente(req, res);
 
     expect(analisisService.listarPorPaciente).toHaveBeenCalledWith('1');
-    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: [analisis] });
+    expect(res.json).toHaveBeenCalledWith({
+      ok: true,
+      analisis: [{ ...analisis, texto_banda: TEXTO_ALTA }],
+    });
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
@@ -334,7 +378,7 @@ describe('aprobar', () => {
     expect(analisisService.marcarAprobado).toHaveBeenCalledWith('5');
     expect(enviarSpy).not.toHaveBeenCalled();
     expect(notificarSpy).not.toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: aprobado });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: { ...aprobado, texto_banda: TEXTO_ALTA } });
   });
 
   it('devuelve 500 ante un error inesperado', async () => {
@@ -503,7 +547,7 @@ describe('enviar', () => {
       usuarioId: 1,
       contenido: 'Recibiste un nuevo análisis.',
     });
-    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: enviado });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, analisis: { ...enviado, texto_banda: TEXTO_ALTA } });
   });
 
   it('devuelve 500 ante un error inesperado', async () => {

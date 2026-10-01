@@ -12,9 +12,7 @@ class ECGRechazado extends Error {
 }
 
 function bandaDe(percentil) {
-  if (percentil >= 90) return 'alta';
-  if (percentil >= 50) return 'media';
-  return 'baja';
+  return percentil >= 98.6 ? 'alta' : 'no_alta';
 }
 
 function simular() {

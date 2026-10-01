@@ -1,5 +1,8 @@
+import net from 'net';
 import { Pool } from 'pg';
 import env from './env.js';
+
+net.setDefaultAutoSelectFamilyAttemptTimeout(2000);
 
 const pool = new Pool(env.db);
 

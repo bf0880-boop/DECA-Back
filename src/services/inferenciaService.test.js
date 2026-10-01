@@ -24,17 +24,17 @@ describe('analizar sin servicio de IA configurado', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(resultado).toMatchObject({
       percentil: 42.37,
-      banda: 'baja',
+      banda: 'no_alta',
       score: 0.4237,
       modelo: { sha256: 'simulado' },
     });
   });
 
   it('asigna la banda según el porcentaje', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.95);
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
     expect((await inferenciaService.analizar({ buffer: Buffer.from('x') })).banda).toBe('alta');
 
-    vi.spyOn(Math, 'random').mockReturnValue(0.6);
-    expect((await inferenciaService.analizar({ buffer: Buffer.from('x') })).banda).toBe('media');
+    vi.spyOn(Math, 'random').mockReturnValue(0.97);
+    expect((await inferenciaService.analizar({ buffer: Buffer.from('x') })).banda).toBe('no_alta');
   });
 });
